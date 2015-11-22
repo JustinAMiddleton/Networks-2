@@ -1,3 +1,4 @@
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -28,6 +29,7 @@ public class SimulationDriver {
 				}				
 						
 				ProgressMonitor.flush();
+				if (Clock.isSecond()) writeStatsEachSecond(nodes);
 			} catch (UnsupportedOperationException e) {
 				System.out.println(e.getMessage());
 				break;
@@ -35,6 +37,7 @@ public class SimulationDriver {
 		} while (Clock.step());
 		
 		printData(nodes);
+		writeStatsEachSecond(nodes);
 	}
 
 	private static ArrayList<Node> makeNodes(int N) {
@@ -84,5 +87,15 @@ public class SimulationDriver {
 			System.out.println("\tand has " + node.getCollisions() + " collisions");
 			System.out.println("\tand sent out " + (node.getCurrentID()-1) + " frames.");
 		}
+	}
+	
+	private static void writeStatsEachSecond(ArrayList<Node> nodes) {
+		PrintWriter write = ProgressMonitor.getWriter("all-" + nodes.size() + ".CSV");
+		String lineToWrite = Clock.time()/1000000 + "";;
+		for (Node node : nodes) {
+			lineToWrite += "," + node.getLastFinishedStats().toString() + ",-";
+		}
+		write.println(lineToWrite);
+		write.flush();
 	}
 }

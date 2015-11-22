@@ -56,13 +56,17 @@ public class ProgressMonitor {
 		int id = frame.getID();
 		if (id % statsInterval == 0) {
 			Node src = frame.getSource();
-			src.getStats(id).deliver(Clock.time());
-			src.getWriter().println(src.getStats(id).toString()+","+collisionCount);
-			src.getWriter().flush();
+			//writeStats(id, src);
 			src.removeStats(id);
 		}
 	}
-	
+
+	private static void writeStats(int id, Node src) {
+		src.getStats(id).deliver(Clock.time());
+		src.getWriter().println(src.getStats(id).toString()+","+collisionCount);
+		src.getWriter().flush();
+	}
+		
 	/**
 	 * TODO: This takes into account a lot of redundancy -- if Node A and B collide, both will
 	 * 		 record their own collision and add 2 rather only 1 collision added overall.

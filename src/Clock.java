@@ -67,7 +67,11 @@ public class Clock {
 	 * @return	true if the input time is now, false otherwise.
 	 */
 	public static boolean equalsTime(Long otherTime) {
-		return time - otherTime == 0; //diff.compareTo(epsilon) < 1;
+		return time == otherTime; 
+	}
+	
+	public static boolean isSecond() {
+		return time > 0 && time % 1000000 == 0;
 	}
 	
 	/**

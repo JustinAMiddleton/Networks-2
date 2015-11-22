@@ -45,7 +45,7 @@ public class Node {
 		this.frameFinish = new HashMap<Frame, Long>();
 		this.frameCollisionCheck = new HashMap<Frame, Long>();
 		this.sent = new Frame(); 
-		this.writer = ProgressMonitor.getWriter(this.NAME + "_new_new.csv");
+		//this.writer = ProgressMonitor.getWriter(this.NAME + ".csv");
 	}
 	
 	public void addBus(Bus b) {
@@ -192,6 +192,7 @@ public class Node {
 	public void acceptACK(Frame f) {
 		frameBus.remove(f);
 		frameCollisionCheck.remove(f);
+		currentCollisions = 0;
 		sent.reset();
 	}
 	
@@ -261,14 +262,21 @@ public class Node {
 		public void finish(long l) { finish = l; }
 		public void deliver(long l) { delivery = l; }
 		public void collide() { ++collisions; }
-		public String toString() { return Clock.time()+","+creation+","+start+","
+		public String toString() { return currentID+","+buffer+","+collisionsAtNode+","
+									+sec(creation)+","+sec(start-creation)+","
+									+collisions+","+sec(finish-start);
+		}
+		public String toString_old() { return Clock.time()+","+creation+","+start+","
 									+collisions+","+finish+","+delivery+","
 									+collisionsAtNode+","+buffer; }
+		private double sec(long l) { return l/1000000.; }
 	}
 	private Map<Integer, Stats> stats = new HashMap<Integer, Stats>();	//Holds stats for every 1000 nodes.
+	private ArrayList<Stats> finishedStats = new ArrayList<Stats>();
 	public void addStats(int id) { stats.put(id, new Stats()); } 
 	public Stats getStats(int id) { if (stats.containsKey(id)) return stats.get(id); else return null; }
-	public void removeStats(int id) { if (stats.containsKey(id)) stats.remove(id); }
+	public void removeStats(int id) { if (stats.containsKey(id)) finishedStats.add(stats.remove(id)); }
+	public Stats getLastFinishedStats() { if (finishedStats.isEmpty()) return null; else return finishedStats.get(finishedStats.size() - 1); }
 	public PrintWriter getWriter() { return writer; }
 	
 }
