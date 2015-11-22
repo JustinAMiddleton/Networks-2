@@ -5,9 +5,9 @@ import java.util.Map;
 
 public class Node {
 	private final String NAME;
-	private final DistributionMethod DISTRIBUTE;	//How often do frames arrive?
-	private final AccessMethod ACCESS;				//How do nodes know if it's okay to transmit?	
-	private final BackoffMethod BACKOFF;			//How does the node choose how long to wait?
+	private final PoissonDistribution poisson;	//How often do frames arrive?
+	private final CSMACD csmacd;				//How do nodes know if it's okay to transmit?	
+	private final RandomBackoff random;			//How does the node choose how long to wait?
 		
 	private final long FRAME_SIZE = 8000;			//How many bits is each frame?
 	private final long TRANS_SPEED = 	100000000;	//bits per second
@@ -27,11 +27,11 @@ public class Node {
 													//	to save time in garbage collection.
 	private PrintWriter writer;						//Writer for this node's stats file.
 	
-	public Node(String name, DistributionMethod d, AccessMethod a, BackoffMethod b) {
+	public Node(String name, PoissonDistribution d, CSMACD a, RandomBackoff b) {
 		this.NAME = name;
-		this.DISTRIBUTE = d;
-		this.ACCESS = a;
-		this.BACKOFF = b;
+		this.poisson = d;
+		this.csmacd = a;
+		this.random = b;
 		
 		this.busses = new ArrayList<Bus>();
 		this.buffer = 0;
@@ -55,7 +55,7 @@ public class Node {
 	 * Creates a stats element for every 1000 nodes.
 	 */
 	public void generateFrames() {
-		int arrived = DISTRIBUTE.next();
+		int arrived = poisson.next();
 		int remainder = (currentID - 1 + buffer) % 1000 + arrived; //currentID will be 1 above how many have been made
 		buffer += arrived;										   //if remainder is above 1000, that means we need a new stats node.
 		if (remainder >= 1000) {
@@ -75,7 +75,7 @@ public class Node {
 
 		Node dest = getRandomDestination(); //TODO: With only one, it doesn't matter if I record the destination.
 		Bus path = findBestPath(dest);		//may throw exception if no path at all	
-		if (ACCESS.canAccess(path)) 		//Checks to see if the path can be accessed.
+		if (csmacd.canAccess(path)) 		//Checks to see if the path can be accessed.
 			sendFrame(dest, path);
 	}
 
@@ -223,7 +223,7 @@ public class Node {
 	 * @return
 	 */
 	private int getBackoff() {
-		return this.BACKOFF.getBackoff();
+		return this.random.getBackoff();
 	}
 	
 	public String getName() {

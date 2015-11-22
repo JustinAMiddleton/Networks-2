@@ -3,14 +3,13 @@ import java.util.Random;
 /**
  * @author Justin A. Middleton
  */
-public class PoissonDistribution extends DistributionMethod {
+public class PoissonDistribution {
 	private final double LAMBDA;
 	
 	public PoissonDistribution(double lambda) {
 		this.LAMBDA = lambda;
 	}
 	
-	@Override
 	/*Based on Knuth's approach.*/
 	public int next() {
 		Random rand = new Random();
