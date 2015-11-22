@@ -12,7 +12,7 @@ public class Bus {
 											//TODO: Does this have to be a map?
 	private final long 	 PROP_SPEED = 	200000000, 					 //in m/s
 					   	 FRAME_TIME = 	50,							 //in microseconds
-					   	 PROP_TIME_x2 = 1000000 * 2*2000/PROP_SPEED; // microseconds, 2000 is distance and 2 is for both there and back
+					   	 PROP_TIME_x2 = 1000000l  *2*2000/PROP_SPEED; // microseconds, 2000 is distance and 2 is for both there and back
 	
 	private int numTransmitting;	//how many nodes are trying to transmit? more than one means collision			
 	private boolean busy,			//is this bus claimed by a node?
@@ -97,8 +97,10 @@ public class Bus {
 		this.busy = this.numTransmitting > 0;		
 		if (!this.busy)
 			this.collision = false;
-		else if (this.numTransmitting > 1)
+		else if (this.numTransmitting > 1) {
+			if (!this.collision) ProgressMonitor.addCollision();	//Add a collision only the first time it transitions.
 			this.collision = true;
+		}
 	}
 	
 	//////////////////////////////////////////////////////////////////////////

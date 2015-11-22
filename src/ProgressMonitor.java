@@ -69,10 +69,13 @@ public class ProgressMonitor {
 	 */
 	public static void recordCollision(Node src, int backoff) {
 		write("\tNode " + src.getName() + " detects collision, will wait " + backoff + " slots.");
-		++collisionCount;
 		int id = src.getCurrentID();
 		if (id % statsInterval == 0 && id > 0)
 			src.getStats(id).collide();
+	}
+	
+	public static void addCollision() {
+		++collisionCount;
 	}
 	
 	/**

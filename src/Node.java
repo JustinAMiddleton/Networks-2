@@ -16,8 +16,10 @@ public class Node {
 	private ArrayList<Bus> busses;					//What busses are connected to this node?
 	private int currentBackoff,						//How many slots does this node have to wait before transmitting?
 				currentID,							//What node # is next?
-				buffer,								//How many nodes are waiting in the queue
-				collisionsAtNode;					//How many times has this node detected a collision?
+				buffer;								//How many nodes are waiting in the queue
+	
+	private int currentCollisions,					//How many times has this node detected a collision for the current frame?
+				collisionsAtNode;					//How many times has this node detected a collision overall?
 	
 	private Map<Frame, Bus> frameBus;				//TODO: MAPS
 	private Map<Frame, Long> frameFinish;			//		ARE
@@ -89,13 +91,17 @@ public class Node {
 		if (buffer == 0)
 			throw new UnsupportedOperationException("sendFrame: No frames to be sent.");
 		
-		sent.setValues(currentID++, this, dest, FRAME_SIZE);
+		if (!sent.isAlreadyInitialized()) {
+			sent.setValues(currentID++, this, dest, FRAME_SIZE);
+			--buffer;			//One less frame on the queue.
+		}
+		
 		long finish = Clock.addStep(TRANS_TIME),
 		     collisionCheck = Clock.addStep(path.getPropTime(sent));
 		frameBus.put(sent, path);
 		frameFinish.put(sent, finish);						//For these two, finish and collisionCheck
 		frameCollisionCheck.put(sent, collisionCheck);		//are the times at which to check.
-		--buffer;			//One less frame on the queue.
+		
 		path.claim();		//One more node transmitting to this path.
 		
 		ProgressMonitor.recordTransmissionStart(this, sent, path);		
@@ -158,10 +164,10 @@ public class Node {
 			if (Clock.equalsTime(frameCollisionCheck.get(frame))) {
 				Bus path = frameBus.get(frame);
 				if (path.hasCollision()) {
+					++currentCollisions;
+					++collisionsAtNode;
+					
 					currentBackoff = getBackoff();
-					--currentID;
-					++buffer;	//TODO: Will have to change for more than 2 nodes (since just getting rid of 
-					++collisionsAtNode;			// the frame doesn't maintain destination).
 					path.release();
 					
 					toRemove.add(frame);
@@ -186,6 +192,7 @@ public class Node {
 	public void acceptACK(Frame f) {
 		frameBus.remove(f);
 		frameCollisionCheck.remove(f);
+		sent.reset();
 	}
 	
 	/**
@@ -223,7 +230,7 @@ public class Node {
 	 * @return
 	 */
 	private int getBackoff() {
-		return this.random.getBackoff();
+		return this.random.getBackoff(currentCollisions);
 	}
 	
 	public String getName() {

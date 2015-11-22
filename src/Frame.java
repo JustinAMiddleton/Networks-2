@@ -3,19 +3,18 @@ public class Frame {
 	private long size;	//in bits
 	private Node src,
 				 dest;
+	private boolean isUsed;
 	
-//	public Frame(int id, Node src, Node dest, long size) {
-//		this.id = id;
-//		this.src = src;
-//		this.dest = dest;
-//		this.size = size;
-//	}
+	public Frame() {
+		this.isUsed = false;
+	}
 	
 	public void setValues(int id, Node src, Node dest, long size) {
 		this.id = id;
 		this.src = src;
 		this.dest = dest;
 		this.size = size;
+		this.isUsed = true;
 	}
 	
 	public int getID() {
@@ -36,5 +35,13 @@ public class Frame {
 	
 	public long getSize() {
 		return this.size;
+	}
+	
+	public void reset() {
+		this.isUsed = false;
+	}
+	
+	public boolean isAlreadyInitialized() {
+		return this.isUsed;
 	}
 }
