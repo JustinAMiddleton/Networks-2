@@ -1,13 +1,20 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Set;
 
 public class SimulationDriver {
 	public static void main(String[] args) {
-		simulate(2, 60);
+		for (int i = 2; i <= 10; i += 2)
+			simulate(i, 60);
 	}
 
 	private static void simulate(int N, long seconds) {
+		Clock.reset();
+		ProgressMonitor.reset();
+		
 		ArrayList<Node> nodes = makeNodes(N);
 		Clock.setDuration(seconds);
 		
@@ -36,8 +43,9 @@ public class SimulationDriver {
 			}
 		} while (Clock.step());
 		
-		printData(nodes);
 		writeStatsEachSecond(nodes);
+		printData(nodes);
+		deleteExtraFiles(nodes);
 	}
 
 	private static ArrayList<Node> makeNodes(int N) {
@@ -80,22 +88,53 @@ public class SimulationDriver {
 		BUS_I.setStatus();					//set the status of the bus
 	}
 	
-	private static void printData(ArrayList<Node> nodes) {
-		System.out.println("There were " + ProgressMonitor.getCollisions() + " collisions.");
+	private static void writeStatsEachSecond(ArrayList<Node> nodes) {
 		for (Node node : nodes) {
-			System.out.println("Node " + node.getName() + " has " + node.getBuffer() + " waiting");
-			System.out.println("\tand has " + node.getCollisions() + " collisions");
-			System.out.println("\tand sent out " + (node.getCurrentID()-1) + " frames.");
+			PrintWriter write = ProgressMonitor.getWriter(node.getName() + ".CSV");
+			String lineToWrite = "";
+			if (node.getLastFinishedStats() != null)
+				lineToWrite += "," + node.getLastFinishedStats().toString();
+			else lineToWrite += "-,-,-,-,-,-,-";
+			write.println(lineToWrite);
+			write.flush();
+			write.close();
 		}
 	}
 	
-	private static void writeStatsEachSecond(ArrayList<Node> nodes) {
-		PrintWriter write = ProgressMonitor.getWriter("all-" + nodes.size() + ".CSV");
-		String lineToWrite = Clock.time()/1000000 + "";;
+	private static void printData(ArrayList<Node> nodes) {
+		PrintWriter write = ProgressMonitor.getWriter("all-" + nodes.size() + ".CSV"),
+					regData = ProgressMonitor.getWriter("regularData.txt");
+		System.out.println("There were " + ProgressMonitor.getCollisions() + " collisions.");
 		for (Node node : nodes) {
-			lineToWrite += "," + node.getLastFinishedStats().toString() + ",-";
+			String printout = "Node " + node.getName() + " has " + node.getBuffer() + " waiting\n"
+								+ "\tand has " + node.getCollisions() + " collisions\n"
+								+ "\tand sent out " + (node.getCurrentID()-1) + " frames.";
+			System.out.println(printout);
+			regData.println(printout);
+			
+			try {
+				File nodefile = new File(node.getName() + ".CSV");
+				BufferedReader in = new BufferedReader(new FileReader(nodefile));
+				String line = "";
+				while (null != (line = in.readLine())) {
+					write.println(line);
+					write.flush();
+				}
+				write.flush();
+				in.close();
+			} catch (IOException e) {}
 		}
-		write.println(lineToWrite);
-		write.flush();
+		regData.println();
+		
+		regData.close();
+		write.close();
+	}
+
+	private static void deleteExtraFiles(ArrayList<Node> nodes) {
+		for (Node node : nodes) {			
+			File nodefile = new File(node.getName() + ".CSV");
+			System.out.println(nodefile.getAbsolutePath());
+			nodefile.delete();
+		}
 	}
 }

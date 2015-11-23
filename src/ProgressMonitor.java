@@ -9,6 +9,11 @@ public class ProgressMonitor {
 	private static ArrayList<String> messages = new ArrayList<String>();
 	private static int collisionCount = 0;
 	
+	public static void reset() {
+		messages = new ArrayList<String>();
+		collisionCount = 0;
+	}
+	
 	/**
 	 * Record a message to write out to the console.
 	 * @param s	The message to write, eventually.

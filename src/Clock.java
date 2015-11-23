@@ -17,6 +17,14 @@ public class Clock {
 	private static PriorityQueue<Long> nextSteps = new PriorityQueue<Long>();
 	private final static long defaultStep = 50;		//in seconds
 	
+	public static void reset() {
+		time = 0;
+		duration = 0;
+		nextSlot = 0;
+		isSlot = true;
+		nextSteps = new PriorityQueue<Long>();
+	}
+	
 	/**
 	 * Accepts a duration in seconds, converts and stores it in microseconds.
 	 * @param d		Duration of simulation in seconds.
