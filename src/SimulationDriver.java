@@ -7,8 +7,8 @@ import java.util.ArrayList;
 
 public class SimulationDriver {
 	public static void main(String[] args) {
-		for (int i = 2; i <= 10; i += 2)
-			simulate(i, 60);
+		//for (int i = 2; i <= 10; i += 2)
+			simulate(2, 30);
 	}
 
 	private static void simulate(int N, long seconds) {
@@ -26,7 +26,7 @@ public class SimulationDriver {
 			try {
 				//All events are recorded by the exact time they're completed, not by how long they 
 				//should take. This reduces math done throughout a process.
-				moveFrames(BUS_I);				//deliver frames/ACKs
+				finishPropagations(BUS_I);				//deliver frames/ACKs
 				finishTransmissions(nodes);		//finish a transmission, start propagation
 				detectCollisions(nodes, BUS_I);		//detect any collisions on a bus
 				
@@ -83,7 +83,7 @@ public class SimulationDriver {
 		BUS_I.setStatus();					//set the status of the bus
 	}
 	
-	private static void moveFrames(Bus BUS_I) {
+	private static void finishPropagations(Bus BUS_I) {
 		BUS_I.checkIfFramesDone();
 		BUS_I.setStatus();					//set the status of the bus
 	}
@@ -104,7 +104,9 @@ public class SimulationDriver {
 	private static void printData(ArrayList<Node> nodes) {
 		PrintWriter write = ProgressMonitor.getWriter("all-" + nodes.size() + ".CSV"),
 					regData = ProgressMonitor.getWriter("regularData.txt");
-		System.out.println("There were " + ProgressMonitor.getCollisions() + " collisions.");
+		String collisions = "There were " + ProgressMonitor.getCollisions() + " collisions.";
+		System.out.println(collisions);
+		regData.println(collisions);
 		for (Node node : nodes) {
 			String printout = "Node " + node.getName() + " has " + node.getBuffer() + " waiting\n"
 								+ "\tand has " + node.getCollisions() + " collisions\n"

@@ -255,19 +255,19 @@ public class Node {
 	 * A class to collect stats. Called from the progress monitor.
 	 */
 	public class Stats {
-		private long creation, start, finish, delivery;
+		private long creation, start, finishTx, delivery;
 		private int collisions;		
-		public Stats() { creation = Clock.time(); start = finish = delivery = collisions = 0; }
+		public Stats() { creation = Clock.time(); start = finishTx = delivery = collisions = 0; }
 		public void start(long l) { if (start == 0)  start = l; }
-		public void finish(long l) { finish = l; }
+		public void finish(long l) { finishTx = l; }
 		public void deliver(long l) { delivery = l; }
 		public void collide() { ++collisions; }
 		public String toString() { return currentID+","+buffer+","+collisionsAtNode+","
 									+sec(creation)+","+sec(start-creation)+","
-									+collisions+","+sec(finish-start);
+									+collisions+","+sec(finishTx-start);
 		}
 		public String toString_old() { return Clock.time()+","+creation+","+start+","
-									+collisions+","+finish+","+delivery+","
+									+collisions+","+finishTx+","+delivery+","
 									+collisionsAtNode+","+buffer; }
 		private double sec(long l) { return l/1000000.; }
 	}
