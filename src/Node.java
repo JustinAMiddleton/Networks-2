@@ -7,28 +7,30 @@ public class Node {
 	private final String NAME;
 	private final PoissonDistribution poisson 	= new PoissonDistribution(.5);	//How often do frames arrive?
 	private final CSMACD csmacd 				= new CSMACD();					//How do nodes know if it's okay to transmit?	
-	private final RandomBackoff random 			= new RandomBackoff();			//How does the node choose how long to wait?
-	
+	private final RandomBackoff random 			= new RandomBackoff();			//How does the node choose how long to wait?	
 	private ArrayList<Bus> busses				= new ArrayList<Bus>();			//What busses are connected to this node?
 	private int currentBackoff 					= 0,							//How many slots does this node have to wait before transmitting?
 				currentID 						= 1,							//What node # is next?
-				buffer							= 0;							//How many nodes are waiting in the queue
-	
-	private int currentCollisions				= 0,							//How many times has this node detected a collision for the current frame?
+				buffer							= 0,							//How many nodes are waiting in the queue	
+				currentCollisions				= 0,							//How many times has this node detected a collision for the current frame?
 				collisionsAtNode				= 0;							//How many times has this node detected a collision overall?
-	
-	private Map<Frame, Bus> frameBus			= new HashMap<Frame, Bus>();	//TODO: MAPS
-	private Map<Frame, Long> frameFinish		= new HashMap<Frame, Long>();	//		ARE
-	private Map<Frame, Long> frameCollisionCheck= new HashMap<Frame, Long>();	//		OVERKILL if I can only transmit one frame once.
-							
+	//DATA FOR CURRENT FRAME SENT OUT
+	private Bus usingBus						= null;	
+	private long frameFinish					= -1l,
+				 frameCollisionCheck			= -1l;	
+	//MISC DATA					
 	private int frame_num 						= 200000;						//But for a window size greater than 1, it might need it?
 	private ArrayList<Frame> frames				= new ArrayList<Frame>(frame_num);	//All frames.
-	private PrintWriter writer;						//Writer for this node's stats file.
+	private PrintWriter writer;													//Writer for this node's stats file.
 	
+	/**
+	 * Constructor; now takes in only name and assumes distribution, access, backoff will be same.
+	 * @param name
+	 */
 	public Node(String name) {
 		this.NAME = name;
 		
-		for (int i = 1; i <= frame_num; ++i) 
+		for (int i = 0; i <= frame_num; ++i) 
 			frames.add(new Frame(i));
 		//this.writer = ProgressMonitor.getWriter(this.NAME + ".csv");
 	}
@@ -52,7 +54,7 @@ public class Node {
 	 */
 	public void sendFrameIfReady() {
 		currentBackoff = Math.max(currentBackoff-1, 0);
-		if (currentBackoff > 0 || buffer == 0 || !frameBus.isEmpty())	
+		if (currentBackoff > 0 || buffer == 0 || usingBus != null)	
 			return;	
 
 		Node dest = getRandomDestination(); //TODO: With only one, it doesn't matter if I record the destination.
@@ -71,19 +73,16 @@ public class Node {
 	private final long TRANS_SPEED = 	100000000;	//bits per second
 	private final long TRANS_TIME = (1000000 * FRAME_SIZE) / TRANS_SPEED;	//in b/s
 	private void sendFrame(Node dest, Bus path) {	
-		Frame frame = frames.get(currentID - 1); //- 1 is to offset: Frame 1 is at position 0, etc.
-		++currentID;
+		Frame frame = frames.get(currentID); //- 1 is to offset: Frame 1 is at position 0, etc.
 		if (!frame.isAlreadyInitialized()) {
 			frame.setValues(this, dest, FRAME_SIZE);
 			frame.startTx();
 			--buffer;			//One less frame on the queue.
 		}
 		
-		long finishTime = Clock.addStep(TRANS_TIME),
-		     collisionCheckTime = Clock.addStep(path.getPropTime(frame));
-		frameBus.put(frame, path);
-		frameFinish.put(frame, finishTime);						//For these two, finish and collisionCheck
-		frameCollisionCheck.put(frame, collisionCheckTime);		//are the times at which to check.		
+		usingBus = path;
+		frameFinish = Clock.addStep(TRANS_TIME);
+		frameCollisionCheck = Clock.addStep(path.getPropTime(frame));	
 		path.claim();											//One more node transmitting to this path.
 		
 		ProgressMonitor.recordTransmissionStart(this, frame, path);		
@@ -94,18 +93,11 @@ public class Node {
 	 * for the propagation phase.
 	 */
 	public void finishTransmission() {
-		for (Frame frame : frameBus.keySet()) {		//For all frames currently in the bus...
-			if (!frameFinish.containsKey(frame)) 	//...check to see if it's still transmitting...
-				continue;			
-			
-			if (Clock.equalsTime(frameFinish.get(frame))) {	//...and if it is, see if it's time for that to end.
-				Bus path = frameBus.get(frame);
-				path.putOnBus(frame);
-				frameFinish.remove(frame);
-				
-				frame.finishTx();
-				ProgressMonitor.recordFinishTransmission(this, frame);
-			}
+		if (Clock.equalsTime(frameFinish)) {	
+			Frame frame = frames.get(currentID);
+			usingBus.putOnBus(frame);			
+			frame.finishTx();
+			ProgressMonitor.recordFinishTransmission(this, frame);
 		}
 	}
 
@@ -141,30 +133,19 @@ public class Node {
 	/**
 	 * For all nodes currently in transmission, check to see if there has been a collision on the Bus.
 	 */
-	public void checkCollision() {
-		ArrayList<Frame> toRemove = new ArrayList<Frame>();	
-		
-		for (Frame frame : frameCollisionCheck.keySet()) {
-			if (Clock.equalsTime(frameCollisionCheck.get(frame))) {
-				Bus path = frameBus.get(frame);
-				if (path.hasCollision()) {
-					++currentCollisions;
-					++collisionsAtNode;
-					--currentID;
-					frame.collide();
-					
-					currentBackoff = getBackoff();
-					path.release();
-					
-					toRemove.add(frame);
-					ProgressMonitor.recordCollision(this, currentBackoff);
-				} 
-			}
-		}
-		
-		for (Frame frame : toRemove) {
-			frameBus.remove(frame);
-			frameCollisionCheck.remove(frame);
+	public void checkCollision() {	
+		if (Clock.equalsTime(frameCollisionCheck)) {
+			if (usingBus.hasCollision()) {
+				++currentCollisions;
+				++collisionsAtNode;
+				frames.get(currentID).collide();
+				
+				currentBackoff = getBackoff();
+				usingBus.release();
+				resetTimes();
+				
+				ProgressMonitor.recordCollision(this, currentBackoff);
+			} 
 		}
 	}
 	
@@ -176,11 +157,17 @@ public class Node {
 	 * When the ACK returns, remove the frame from any storage.
 	 */
 	public void acceptACK(Frame frame) {
-		frameBus.remove(frame);
-		frameCollisionCheck.remove(frame);
+		++currentID;
+		resetTimes();
 		currentCollisions = 0;
 		frame.deliverAndACK();
 		System.out.println("\t\t" + frame.toString());
+	}
+
+	private void resetTimes() {
+		usingBus = null;
+		frameFinish = -1l;
+		frameCollisionCheck = -1l;
 	}
 	
 	/**

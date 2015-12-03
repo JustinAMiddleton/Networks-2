@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 
 public class ProgressMonitor {
-	private static final int statsInterval = 1000;
 	private static ArrayList<String> messages = new ArrayList<String>();
 	private static int collisionCount = 0;
 	
@@ -33,6 +32,7 @@ public class ProgressMonitor {
 			if (i < messages.size() - 1)	
 				fullMessage += "\n";
 		}
+		
 		messages = new ArrayList<String>();
 		
 		if (fullMessage.compareTo("") != 0) {
@@ -53,11 +53,7 @@ public class ProgressMonitor {
 		write("Frame successfully propogated and ACKed from Node " + frame.getSource().getName()
 				 + " to Node " + frame.getDestination().getName());
 	}
-		
-	/**
-	 * TODO: This takes into account a lot of redundancy -- if Node A and B collide, both will
-	 * 		 record their own collision and add 2 rather only 1 collision added overall.
-	 */
+
 	public static void recordCollision(Node src, int backoff) {
 		write("\tNode " + src.getName() + " detects collision, will wait " + backoff + " slots.");
 	}
@@ -65,11 +61,7 @@ public class ProgressMonitor {
 	public static void addCollision() {
 		++collisionCount;
 	}
-	
-	/**
-	 * Total number of collisions recorded.
-	 * @return
-	 */
+
 	public static int getCollisions() {
 		return collisionCount;
 	}

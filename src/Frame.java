@@ -5,6 +5,7 @@ public class Frame {
 				 dest;
 	private boolean isUsed;
 	
+	//Timing data!
 	private long startTXTime, finishTXTime, deliveryAndACKTime;
 	private int collisions;
 	
