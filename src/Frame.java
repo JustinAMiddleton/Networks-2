@@ -5,16 +5,24 @@ public class Frame {
 				 dest;
 	private boolean isUsed;
 	
-	public Frame() {
+	private long startTXTime, finishTXTime, deliveryAndACKTime;
+	private int collisions;
+	
+	public Frame(int id) {
+		this.id = id;
 		this.isUsed = false;
 	}
 	
-	public void setValues(int id, Node src, Node dest, long size) {
-		this.id = id;
+	public void setValues(Node src, Node dest, long size) {
 		this.src = src;
 		this.dest = dest;
 		this.size = size;
 		this.isUsed = true;
+		
+		this.startTXTime = 0;
+		this.finishTXTime = 0;
+		this.deliveryAndACKTime = 0;
+		this.collisions = 0;
 	}
 	
 	public int getID() {
@@ -43,5 +51,25 @@ public class Frame {
 	
 	public boolean isAlreadyInitialized() {
 		return this.isUsed;
+	}
+
+	public void startTx() {
+		this.startTXTime = Clock.time();
+	}
+
+	public void finishTx() {
+		this.finishTXTime = Clock.time();
+	}
+
+	public void collide() {
+		this.collisions++;
+	}
+
+	public void deliverAndACK() {
+		this.deliveryAndACKTime = Clock.time();
+	}
+	
+	public String toString() {
+		return id+","+startTXTime+","+finishTXTime+","+collisions+","+deliveryAndACKTime;
 	}
 }

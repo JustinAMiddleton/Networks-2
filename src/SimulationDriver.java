@@ -36,14 +36,14 @@ public class SimulationDriver {
 				}				
 						
 				ProgressMonitor.flush();
-				if (Clock.isSecond()) writeStatsEachSecond(nodes);
+				//if (Clock.isSecond()) writeStatsEachSecond(nodes);
 			} catch (UnsupportedOperationException e) {
 				System.out.println(e.getMessage());
 				break;
 			}
 		} while (Clock.step());
 		
-		writeStatsEachSecond(nodes);
+		//writeStatsEachSecond(nodes);
 		printData(nodes);
 		deleteExtraFiles(nodes);
 	}
@@ -52,7 +52,7 @@ public class SimulationDriver {
 		ArrayList<Node> nodes = new ArrayList<Node>();
 		for (int i = 0; i < N; ++i) {
 			String name = (char) (i + 'A') + "";	//Increments through A, B, C...
-			nodes.add(new Node(name, new PoissonDistribution(.5), new CSMACD(), new RandomBackoff()));
+			nodes.add(new Node(name));
 		}
 		return nodes;
 	}
@@ -86,19 +86,6 @@ public class SimulationDriver {
 	private static void finishPropagations(Bus BUS_I) {
 		BUS_I.checkIfFramesDone();
 		BUS_I.setStatus();					//set the status of the bus
-	}
-	
-	private static void writeStatsEachSecond(ArrayList<Node> nodes) {
-		for (Node node : nodes) {
-			PrintWriter write = ProgressMonitor.getWriter(node.getName() + ".CSV");
-			String lineToWrite = "";
-			if (node.getLastFinishedStats() != null)
-				lineToWrite += "," + node.getLastFinishedStats().toString();
-			else lineToWrite += "-,-,-,-,-,-,-";
-			write.println(lineToWrite);
-			write.flush();
-			write.close();
-		}
 	}
 	
 	private static void printData(ArrayList<Node> nodes) {

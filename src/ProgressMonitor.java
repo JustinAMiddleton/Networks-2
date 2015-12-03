@@ -43,33 +43,15 @@ public class ProgressMonitor {
 	
 	public static void recordTransmissionStart(Node src, Frame sent, Bus path) {
 		write("Node " + src.getName() + " starts transmitting Frame " + sent.getID() + " on Bus " + path.getName());
-		int id = sent.getID();
-		if (id % statsInterval == 0) 
-			src.getStats(id).start(Clock.time());
 	}
 	
 	public static void recordFinishTransmission(Node src, Frame frame) {
 		write("Node " + src.getName() + " finished transmitting Frame " + frame.getID());
-		int id = frame.getID();
-		if (id % statsInterval == 0)
-			src.getStats(id).finish(Clock.time());
 	}
 	
 	public static void recordDelivery(Frame frame) {
 		write("Frame successfully propogated and ACKed from Node " + frame.getSource().getName()
 				 + " to Node " + frame.getDestination().getName());
-		int id = frame.getID();
-		if (id % statsInterval == 0) {
-			Node src = frame.getSource();
-			//writeStats(id, src);
-			src.removeStats(id);
-		}
-	}
-
-	private static void writeStats(int id, Node src) {
-		src.getStats(id).deliver(Clock.time());
-		src.getWriter().println(src.getStats(id).toString()+","+collisionCount);
-		src.getWriter().flush();
 	}
 		
 	/**
@@ -78,9 +60,6 @@ public class ProgressMonitor {
 	 */
 	public static void recordCollision(Node src, int backoff) {
 		write("\tNode " + src.getName() + " detects collision, will wait " + backoff + " slots.");
-		int id = src.getCurrentID();
-		if (id % statsInterval == 0 && id > 0)
-			src.getStats(id).collide();
 	}
 	
 	public static void addCollision() {

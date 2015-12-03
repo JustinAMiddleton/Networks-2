@@ -5,46 +5,31 @@ import java.util.Map;
 
 public class Node {
 	private final String NAME;
-	private final PoissonDistribution poisson;	//How often do frames arrive?
-	private final CSMACD csmacd;				//How do nodes know if it's okay to transmit?	
-	private final RandomBackoff random;			//How does the node choose how long to wait?
-		
-	private final long FRAME_SIZE = 8000;			//How many bits is each frame?
-	private final long TRANS_SPEED = 	100000000;	//bits per second
-	private final long TRANS_TIME = (1000000 * FRAME_SIZE) / TRANS_SPEED;	//in b/s
+	private final PoissonDistribution poisson 	= new PoissonDistribution(.5);	//How often do frames arrive?
+	private final CSMACD csmacd 				= new CSMACD();					//How do nodes know if it's okay to transmit?	
+	private final RandomBackoff random 			= new RandomBackoff();			//How does the node choose how long to wait?
 	
-	private ArrayList<Bus> busses;					//What busses are connected to this node?
-	private int currentBackoff,						//How many slots does this node have to wait before transmitting?
-				currentID,							//What node # is next?
-				buffer;								//How many nodes are waiting in the queue
+	private ArrayList<Bus> busses				= new ArrayList<Bus>();			//What busses are connected to this node?
+	private int currentBackoff 					= 0,							//How many slots does this node have to wait before transmitting?
+				currentID 						= 1,							//What node # is next?
+				buffer							= 0;							//How many nodes are waiting in the queue
 	
-	private int currentCollisions,					//How many times has this node detected a collision for the current frame?
-				collisionsAtNode;					//How many times has this node detected a collision overall?
+	private int currentCollisions				= 0,							//How many times has this node detected a collision for the current frame?
+				collisionsAtNode				= 0;							//How many times has this node detected a collision overall?
 	
-	private Map<Frame, Bus> frameBus;				//TODO: MAPS
-	private Map<Frame, Long> frameFinish;			//		ARE
-	private Map<Frame, Long> frameCollisionCheck;	//		OVERKILL if I can only transmit one frame once.
-													//But for a window size greater than 1, it might need it?
-	private Frame sent;								//The frame that this node sends. Single frame (instead of creating a new one)
-													//	to save time in garbage collection.
+	private Map<Frame, Bus> frameBus			= new HashMap<Frame, Bus>();	//TODO: MAPS
+	private Map<Frame, Long> frameFinish		= new HashMap<Frame, Long>();	//		ARE
+	private Map<Frame, Long> frameCollisionCheck= new HashMap<Frame, Long>();	//		OVERKILL if I can only transmit one frame once.
+							
+	private int frame_num 						= 200000;						//But for a window size greater than 1, it might need it?
+	private ArrayList<Frame> frames				= new ArrayList<Frame>(frame_num);	//All frames.
 	private PrintWriter writer;						//Writer for this node's stats file.
 	
-	public Node(String name, PoissonDistribution d, CSMACD a, RandomBackoff b) {
+	public Node(String name) {
 		this.NAME = name;
-		this.poisson = d;
-		this.csmacd = a;
-		this.random = b;
 		
-		this.busses = new ArrayList<Bus>();
-		this.buffer = 0;
-		this.currentBackoff = 0;
-		this.currentID = 1;
-		this.collisionsAtNode = 0;
-		
-		this.frameBus = new HashMap<Frame, Bus>();
-		this.frameFinish = new HashMap<Frame, Long>();
-		this.frameCollisionCheck = new HashMap<Frame, Long>();
-		this.sent = new Frame(); 
+		for (int i = 1; i <= frame_num; ++i) 
+			frames.add(new Frame(i));
 		//this.writer = ProgressMonitor.getWriter(this.NAME + ".csv");
 	}
 	
@@ -58,12 +43,7 @@ public class Node {
 	 */
 	public void generateFrames() {
 		int arrived = poisson.next();
-		int remainder = (currentID - 1 + buffer) % 1000 + arrived; //currentID will be 1 above how many have been made
-		buffer += arrived;										   //if remainder is above 1000, that means we need a new stats node.
-		if (remainder >= 1000) {
-			int id = (currentID - 1 + buffer) / 1000 * 1000; //rounding to the nearest thousand
-			addStats(id);
-		}
+		buffer += arrived;										  
 	}
 	
 	/**
@@ -87,24 +67,26 @@ public class Node {
 	 * @param dest
 	 * @param path
 	 */
-	private void sendFrame(Node dest, Bus path) {
-		if (buffer == 0)
-			throw new UnsupportedOperationException("sendFrame: No frames to be sent.");
-		
-		if (!sent.isAlreadyInitialized()) {
-			sent.setValues(currentID++, this, dest, FRAME_SIZE);
+	private final long FRAME_SIZE = 8000;			//How many bits is each frame?
+	private final long TRANS_SPEED = 	100000000;	//bits per second
+	private final long TRANS_TIME = (1000000 * FRAME_SIZE) / TRANS_SPEED;	//in b/s
+	private void sendFrame(Node dest, Bus path) {	
+		Frame frame = frames.get(currentID - 1); //- 1 is to offset: Frame 1 is at position 0, etc.
+		++currentID;
+		if (!frame.isAlreadyInitialized()) {
+			frame.setValues(this, dest, FRAME_SIZE);
+			frame.startTx();
 			--buffer;			//One less frame on the queue.
 		}
 		
-		long finish = Clock.addStep(TRANS_TIME),
-		     collisionCheck = Clock.addStep(path.getPropTime(sent));
-		frameBus.put(sent, path);
-		frameFinish.put(sent, finish);						//For these two, finish and collisionCheck
-		frameCollisionCheck.put(sent, collisionCheck);		//are the times at which to check.
+		long finishTime = Clock.addStep(TRANS_TIME),
+		     collisionCheckTime = Clock.addStep(path.getPropTime(frame));
+		frameBus.put(frame, path);
+		frameFinish.put(frame, finishTime);						//For these two, finish and collisionCheck
+		frameCollisionCheck.put(frame, collisionCheckTime);		//are the times at which to check.		
+		path.claim();											//One more node transmitting to this path.
 		
-		path.claim();		//One more node transmitting to this path.
-		
-		ProgressMonitor.recordTransmissionStart(this, sent, path);		
+		ProgressMonitor.recordTransmissionStart(this, frame, path);		
 	}
 	
 	/**
@@ -120,6 +102,8 @@ public class Node {
 				Bus path = frameBus.get(frame);
 				path.putOnBus(frame);
 				frameFinish.remove(frame);
+				
+				frame.finishTx();
 				ProgressMonitor.recordFinishTransmission(this, frame);
 			}
 		}
@@ -166,6 +150,8 @@ public class Node {
 				if (path.hasCollision()) {
 					++currentCollisions;
 					++collisionsAtNode;
+					--currentID;
+					frame.collide();
 					
 					currentBackoff = getBackoff();
 					path.release();
@@ -189,11 +175,12 @@ public class Node {
 	/**
 	 * When the ACK returns, remove the frame from any storage.
 	 */
-	public void acceptACK(Frame f) {
-		frameBus.remove(f);
-		frameCollisionCheck.remove(f);
+	public void acceptACK(Frame frame) {
+		frameBus.remove(frame);
+		frameCollisionCheck.remove(frame);
 		currentCollisions = 0;
-		sent.reset();
+		frame.deliverAndACK();
+		System.out.println("\t\t" + frame.toString());
 	}
 	
 	/**
@@ -248,35 +235,5 @@ public class Node {
 	
 	public int getCollisions() {
 		return collisionsAtNode;
-	}
-	//////////////////////////////
-	
-	/**
-	 * A class to collect stats. Called from the progress monitor.
-	 */
-	public class Stats {
-		private long creation, start, finishTx, delivery;
-		private int collisions;		
-		public Stats() { creation = Clock.time(); start = finishTx = delivery = collisions = 0; }
-		public void start(long l) { if (start == 0)  start = l; }
-		public void finish(long l) { finishTx = l; }
-		public void deliver(long l) { delivery = l; }
-		public void collide() { ++collisions; }
-		public String toString() { return currentID+","+buffer+","+collisionsAtNode+","
-									+sec(creation)+","+sec(start-creation)+","
-									+collisions+","+sec(finishTx-start);
-		}
-		public String toString_old() { return Clock.time()+","+creation+","+start+","
-									+collisions+","+finishTx+","+delivery+","
-									+collisionsAtNode+","+buffer; }
-		private double sec(long l) { return l/1000000.; }
-	}
-	private Map<Integer, Stats> stats = new HashMap<Integer, Stats>();	//Holds stats for every 1000 nodes.
-	private ArrayList<Stats> finishedStats = new ArrayList<Stats>();
-	public void addStats(int id) { stats.put(id, new Stats()); } 
-	public Stats getStats(int id) { if (stats.containsKey(id)) return stats.get(id); else return null; }
-	public void removeStats(int id) { if (stats.containsKey(id)) finishedStats.add(stats.remove(id)); }
-	public Stats getLastFinishedStats() { if (finishedStats.isEmpty()) return null; else return finishedStats.get(finishedStats.size() - 1); }
-	public PrintWriter getWriter() { return writer; }
-	
+	}	
 }
