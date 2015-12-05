@@ -91,7 +91,7 @@ public class SimulationDriver {
 	
 	private static void finishTransmissions(ArrayList<Node> nodes) {
 		for (NetworkElementInterface node : nodes) {
-			node.finishTransmission(); //TODO: MAKE THIS BETTER
+			node.finishTransmission();
 		}		
 	}
 
