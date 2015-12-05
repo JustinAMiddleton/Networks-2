@@ -41,11 +41,11 @@ public class ProgressMonitor {
 		}
 	}
 	
-	public static void recordTransmissionStart(Node src, Frame sent, Bus path) {
+	public static void recordTransmissionStart(NetworkElementInterface src, Frame sent, Bus path) {
 		write("Node " + src.getName() + " starts transmitting Frame " + sent.getID() + " on Bus " + path.getName());
 	}
 	
-	public static void recordFinishTransmission(Node src, Frame frame) {
+	public static void recordFinishTransmission(NetworkElementInterface src, Frame frame) {
 		write("Node " + src.getName() + " finished transmitting Frame " + frame.getID());
 	}
 	
@@ -54,7 +54,7 @@ public class ProgressMonitor {
 				 + " to Node " + frame.getDestination().getName());
 	}
 
-	public static void recordCollision(Node src, int backoff) {
+	public static void recordCollision(NetworkElementInterface src, int backoff) {
 		write("\tNode " + src.getName() + " detects collision, will wait " + backoff + " slots.");
 	}
 	

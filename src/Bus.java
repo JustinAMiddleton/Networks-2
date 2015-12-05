@@ -11,7 +11,6 @@ public class Bus {
 	private Map<Frame, Long> propFrames_finishTime;	//All the frames currently propagating (after the node finishes transmission)
 											//TODO: Does this have to be a map?
 	private final long 	 PROP_SPEED = 	200000000, 					 //in m/s
-					   	 FRAME_TIME = 	50,							 //in microseconds
 					   	 PROP_TIME_x2 = 1000000l  *2*2000/PROP_SPEED; // microseconds, 2000 is distance and 2 is for both there and back
 	
 	private int numTransmitting;	//how many nodes are trying to transmit? more than one means collision			
@@ -114,7 +113,7 @@ public class Bus {
 		return getDistance(frame.getSource(), frame.getDestination());
 	}
 	
-	public long getDistance(Node src, Node dest) {
+	public long getDistance(NetworkElementInterface src, NetworkElementInterface dest) {
 		if (!nodes.contains(src) || !nodes.contains(dest))
 			return Long.MAX_VALUE; //highest value in case there are no paths.
 		else
@@ -123,6 +122,5 @@ public class Bus {
 	
 	public String getName() { return this.name; }	
 	public Iterable<Node> getNodes() { return this.nodes; }	
-	public long getFrameTime() { return this.FRAME_TIME; }
 	public long getPropTime(Frame frame) { return PROP_TIME_x2; } //1000000 * 2*getDistance(frame) / PROP_SPEED; }
 }

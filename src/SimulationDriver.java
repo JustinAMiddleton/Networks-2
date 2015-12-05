@@ -15,25 +15,33 @@ public class SimulationDriver {
 		Clock.reset();
 		ProgressMonitor.reset();
 		
-		ArrayList<Node> nodes = makeNodes(N);
+		ArrayList<Node> nodes = makeNodes();
+		ArrayList<Router> routers = makeRouters();
 		Clock.setDuration(seconds);
 		
 		//TODO: Change if want more than one bus/link!
-		Bus BUS_I = new Bus("BUS_I");
-		BUS_I.addNode(nodes);
+		ArrayList<Bus> busses = makeBussesAndLinks(nodes, routers);
 		
+		/**
+		 * TODO: Figure out how often routers should send frames. As often as possible?
+		 */
 		do {
 			try {
 				//All events are recorded by the exact time they're completed, not by how long they 
 				//should take. This reduces math done throughout a process.
-				finishPropagations(BUS_I);				//deliver frames/ACKs
+				finishPropagations(busses);				//deliver frames/ACKs
 				finishTransmissions(nodes);		//finish a transmission, start propagation
-				detectCollisions(nodes, BUS_I);		//detect any collisions on a bus
+				detectCollisions(nodes, busses);		//detect any collisions on a bus
 				
 				if (Clock.isSlotTime()) {	
 					generateFrames(nodes);		//calculate how many new frames arrive
-					startTransmissions(nodes, BUS_I);	//see which nodes start transmitting
-				}				
+					startTransmissions(nodes, busses);	//see which nodes start transmitting
+				}		
+				
+				if (Clock.isUpdateTableTime()) {
+					randomizeCosts(busses);
+					updateTables(routers);
+				}
 						
 				ProgressMonitor.flush();
 				//if (Clock.isSecond()) writeStatsEachSecond(nodes);
@@ -48,13 +56,23 @@ public class SimulationDriver {
 		deleteExtraFiles(nodes);
 	}
 
-	private static ArrayList<Node> makeNodes(int N) {
-		ArrayList<Node> nodes = new ArrayList<Node>();
-		for (int i = 0; i < N; ++i) {
-			String name = (char) (i + 'A') + "";	//Increments through A, B, C...
-			nodes.add(new Node(name));
-		}
-		return nodes;
+	/**
+	 * In the below three methods, we need to construct the network by hand.
+	 * We can replace these methods with a single one, if we want.
+	 * Whatever works.
+	 */
+	private static ArrayList<Node> makeNodes() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	private static ArrayList<Router> makeRouters() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	private static ArrayList<Bus> makeBussesAndLinks(ArrayList<Node> nodes, ArrayList<Router> routers) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	private static void generateFrames(ArrayList<Node> nodes) {
@@ -63,29 +81,47 @@ public class SimulationDriver {
 		}
 	}
 		
-	private static void startTransmissions(ArrayList<Node> nodes, Bus BUS_I) {
-		for (Node node : nodes) {
+	private static void startTransmissions(ArrayList<Node> nodes, ArrayList<Bus> busses) {
+		for (NetworkElementInterface node : nodes) {
 			node.sendFrameIfReady();
 		}
-		BUS_I.setStatus();					//set the status of the bus
+		
+		for (Bus bus : busses) bus.setStatus();					//set the status of the bus
 	}
 	
 	private static void finishTransmissions(ArrayList<Node> nodes) {
-		for (Node node : nodes) {
+		for (NetworkElementInterface node : nodes) {
 			node.finishTransmission(); //TODO: MAKE THIS BETTER
 		}		
 	}
 
-	private static void detectCollisions(ArrayList<Node> nodes, Bus BUS_I) {
+	private static void detectCollisions(ArrayList<Node> nodes, ArrayList<Bus> busses) {
 		for (Node node : nodes) {
 			node.checkCollision();
 		}
-		BUS_I.setStatus();					//set the status of the bus
+		
+		for (Bus bus : busses) bus.setStatus();					//set the status of the bus
 	}
 	
-	private static void finishPropagations(Bus BUS_I) {
-		BUS_I.checkIfFramesDone();
-		BUS_I.setStatus();					//set the status of the bus
+	private static void finishPropagations(ArrayList<Bus> busses) {
+		for (Bus bus : busses) {
+			bus.checkIfFramesDone();
+			bus.setStatus();					//set the status of the bus
+		}
+	}
+	
+	private static void randomizeCosts(ArrayList<Bus> busses) {
+		for (Bus bus : busses) {
+			if (bus instanceof Link) {
+				((Link) bus).randomCost();
+			}
+		}
+	}
+	
+	private static void updateTables(ArrayList<Router> routers) {
+		for (Router router : routers) {
+			router.updateTable();
+		}
 	}
 	
 	private static void printData(ArrayList<Node> nodes) {
@@ -120,7 +156,7 @@ public class SimulationDriver {
 	}
 
 	private static void deleteExtraFiles(ArrayList<Node> nodes) {
-		for (Node node : nodes) {			
+		for (NetworkElementInterface node : nodes) {			
 			File nodefile = new File(node.getName() + ".CSV");
 			System.out.println(nodefile.getAbsolutePath());
 			nodefile.delete();

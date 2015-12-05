@@ -3,14 +3,14 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Node {
+public class Node implements NetworkElementInterface {
 	private final String NAME;
 	private final PoissonDistribution poisson 	= new PoissonDistribution(.5);	//How often do frames arrive?
 	private final CSMACD csmacd 				= new CSMACD();					//How do nodes know if it's okay to transmit?	
 	private final RandomBackoff random 			= new RandomBackoff();			//How does the node choose how long to wait?	
 	private ArrayList<Bus> busses				= new ArrayList<Bus>();			//What busses are connected to this node?
 	private int currentBackoff 					= 0,							//How many slots does this node have to wait before transmitting?
-				currentID 						= 1,							//What node # is next?
+				currentID 						= 1,							//What frame # is next?
 				buffer							= 0,							//How many nodes are waiting in the queue	
 				currentCollisions				= 0,							//How many times has this node detected a collision for the current frame?
 				collisionsAtNode				= 0;							//How many times has this node detected a collision overall?
@@ -35,6 +35,10 @@ public class Node {
 		//this.writer = ProgressMonitor.getWriter(this.NAME + ".csv");
 	}
 	
+	/* (non-Javadoc)
+	 * @see NetworkInterface#addBus(Bus)
+	 */
+	@Override
 	public void addBus(Bus b) {
 		this.busses.add(b);
 	}
@@ -48,10 +52,10 @@ public class Node {
 		buffer += arrived;										  
 	}
 	
-	/**
-	 * Checks to see if the node can transmit.
-	 * If it can, then it sends one out.
+	/* (non-Javadoc)
+	 * @see NetworkInterface#sendFrameIfReady()
 	 */
+	@Override
 	public void sendFrameIfReady() {
 		currentBackoff = Math.max(currentBackoff-1, 0);
 		if (currentBackoff > 0 || buffer == 0 || usingBus != null)	
@@ -88,10 +92,10 @@ public class Node {
 		ProgressMonitor.recordTransmissionStart(this, frame, path);		
 	}
 	
-	/**
-	 * Check which frames are done transmitting, and if any are, put them fully on the bus
-	 * for the propagation phase.
+	/* (non-Javadoc)
+	 * @see NetworkInterface#finishTransmission()
 	 */
+	@Override
 	public void finishTransmission() {
 		if (Clock.equalsTime(frameFinish)) {	
 			Frame frame = frames.get(currentID);
@@ -107,7 +111,7 @@ public class Node {
 	 * @return			The best path to get to that node.
 	 * @throws UnsupportedOperationException
 	 */
-	private Bus findBestPath(Node dest) throws UnsupportedOperationException {
+	private Bus findBestPath(NetworkElementInterface dest) throws UnsupportedOperationException {
 		return busses.iterator().next(); //shortcut because I know there'll be only one
 		
 		/**
@@ -149,6 +153,10 @@ public class Node {
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see NetworkInterface#acceptFrame(Frame)
+	 */
+	@Override
 	public void acceptFrame(Frame f) {
 		//TODO: Nothing happens right now.
 	}
@@ -208,10 +216,18 @@ public class Node {
 		return this.random.getBackoff(currentCollisions);
 	}
 	
+	/* (non-Javadoc)
+	 * @see NetworkInterface#getName()
+	 */
+	@Override
 	public String getName() {
 		return this.NAME;
 	}
 	
+	/* (non-Javadoc)
+	 * @see NetworkInterface#getBuffer()
+	 */
+	@Override
 	public int getBuffer() {
 		return this.buffer;
 	}

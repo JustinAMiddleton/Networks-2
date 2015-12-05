@@ -89,4 +89,8 @@ public class Clock {
 	public static boolean isSlotTime() {
 		return isSlot;
 	}
+
+	public static boolean isUpdateTableTime() {
+		return time % 2000 == 0;
+	}
 }
