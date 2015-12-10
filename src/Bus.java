@@ -50,7 +50,7 @@ public class Bus {
 	 * @return			Double the propagation time, which is when the propagation of 
 	 * 					both frame and ACK will be done.
 	 */
-	public long putOnBus(Frame frame) {
+	public long acceptFrame(Frame frame) {
 		long timeRemaining = PROP_TIME_x2; 
 		long finish = Clock.addStep(timeRemaining);
 		this.propFrames_finishTime.put(frame, finish);
@@ -82,7 +82,7 @@ public class Bus {
 	protected void deliver(Frame frame) {
 		NetworkElementInterface destination = frame.getNextHop(),
 								src = frame.getSource();
-		destination.acceptFrame(frame);
+		destination.acceptFrameFromNode(frame);
 		src.acceptACK(frame);
 		numTransmitting--; 
 		ProgressMonitor.recordDelivery(frame);

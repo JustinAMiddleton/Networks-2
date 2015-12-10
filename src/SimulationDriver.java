@@ -19,12 +19,8 @@ public class SimulationDriver {
 		ArrayList<Router> routers = makeRouters();
 		Clock.setDuration(seconds);
 		
-		//TODO: Change if want more than one bus/link!
 		ArrayList<Bus> busses = makeBussesAndLinks(nodes, routers);
 		
-		/**
-		 * TODO: Figure out how often routers should send frames. As often as possible?
-		 */
 		do {
 			try {
 				if (Clock.isUpdateTableTime()) {
@@ -40,7 +36,7 @@ public class SimulationDriver {
 				
 				if (Clock.isSlotTime()) {	
 					generateFrames(nodes);		//calculate how many new frames arrive
-					startTransmissions(nodes, busses);	//see which nodes start transmitting
+					startTransmissions(nodes, routers, busses);	//see which nodes start transmitting
 				}		
 						
 				ProgressMonitor.flush();
@@ -128,8 +124,12 @@ public class SimulationDriver {
 		}
 	}
 		
-	private static void startTransmissions(ArrayList<Node> nodes, ArrayList<Bus> busses) {
+	private static void startTransmissions(ArrayList<Node> nodes, ArrayList<Router> routers, ArrayList<Bus> busses) {
 		for (NetworkElementInterface node : nodes) {
+			node.sendFrameIfReady();
+		}
+		
+		for (NetworkElementInterface node : routers) {
 			node.sendFrameIfReady();
 		}
 		

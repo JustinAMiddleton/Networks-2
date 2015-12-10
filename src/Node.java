@@ -78,6 +78,7 @@ public class Node implements NetworkElementInterface {
 	private final long FRAME_SIZE = 8000;			//How many bits is each frame?
 	private final long TRANS_SPEED = 	100000000;	//bits per second
 	private final long TRANS_TIME = (1000000 * FRAME_SIZE) / TRANS_SPEED;	//in b/s
+	
 	private void sendFrame(Node dest, Bus path) {	
 		Frame frame = frames.get(currentID); //- 1 is to offset: Frame 1 is at position 0, etc.
 		if (!frame.isAlreadyInitialized()) {
@@ -86,20 +87,9 @@ public class Node implements NetworkElementInterface {
 			--buffer;			//One less frame on the queue.
 			
 			if (getAccessibleNodes().contains(dest))
-				frame.setNextHop(dest);
-			else {
-				Iterable<Router> routers = path.getRouters();
-				int index = new Random().nextInt(2),
-					i = 0;
-				
-				for (Router router : routers) {
-					if (i == index) {
-						frame.setNextHop(router);
-						break;
-					} else
-						++i;
-				}
-			}
+				;//frame.setNextHop(dest);
+			else 		
+				frame.setNextHop(getRandomRouter(path));
 		}
 		
 		usingBus = path;
@@ -107,7 +97,23 @@ public class Node implements NetworkElementInterface {
 		frameCollisionCheck = Clock.addStep(path.getPropTime(frame));	
 		path.claim();											//One more node transmitting to this path.
 		
-		ProgressMonitor.recordTransmissionStart(this, frame, path);		
+		ProgressMonitor.recordTransmissionStart(frame, path);		
+	}
+
+	private Router getRandomRouter(Bus path) {
+		Router randomRouter = null;
+		Iterable<Router> routers = path.getRouters();
+		int index = new Random().nextInt(2),
+			i = 0;
+		
+		for (Router router : routers) {
+			if (i == index) {
+				randomRouter = router;
+				break;
+			} else
+				++i;
+		}
+		return randomRouter;
 	}
 	
 	/* (non-Javadoc)
@@ -117,9 +123,9 @@ public class Node implements NetworkElementInterface {
 	public void finishTransmission() {
 		if (Clock.equalsTime(frameFinish)) {	
 			Frame frame = frames.get(currentID);
-			usingBus.putOnBus(frame);			
+			usingBus.acceptFrame(frame);			
 			frame.finishTx();
-			ProgressMonitor.recordFinishTransmission(this, frame);
+			ProgressMonitor.recordTransmissionFinish(frame, usingBus);
 		}
 	}
 
@@ -166,7 +172,7 @@ public class Node implements NetworkElementInterface {
 				usingBus.release();
 				resetTimes();
 				
-				ProgressMonitor.recordCollision(this, currentBackoff);
+				ProgressMonitor.recordCollision(this, frames.get(currentID), currentBackoff);
 			} 
 		}
 	}
@@ -175,8 +181,8 @@ public class Node implements NetworkElementInterface {
 	 * @see NetworkInterface#acceptFrame(Frame)
 	 */
 	@Override
-	public void acceptFrame(Frame f) {
-		//TODO: Nothing happens right now.
+	public void acceptFrameFromNode(Frame f) {
+		f.deliverAndACK();
 	}
 	
 	/**
@@ -187,7 +193,6 @@ public class Node implements NetworkElementInterface {
 		resetTimes();
 		currentCollisions = 0;
 		frame.deliverAndACK();
-		System.out.println("\t\t" + frame.toString());
 	}
 
 	private void resetTimes() {
@@ -260,5 +265,10 @@ public class Node implements NetworkElementInterface {
 			nodes.remove(this);
 		
 		allNodes = nodes;
+	}
+
+	@Override
+	public void acceptFrameFromRouter(Frame f) {
+		//NOTHING
 	}
 }

@@ -19,7 +19,9 @@ public interface NetworkElementInterface {
 	 */
 	void finishTransmission();
 
-	void acceptFrame(Frame f);
+	void acceptFrameFromNode(Frame f);
+	
+	void acceptFrameFromRouter(Frame f);
 	
 	void acceptACK(Frame f);
 

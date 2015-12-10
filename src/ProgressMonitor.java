@@ -41,21 +41,22 @@ public class ProgressMonitor {
 		}
 	}
 	
-	public static void recordTransmissionStart(NetworkElementInterface src, Frame sent, Bus path) {
-		write("Node " + src.getName() + " starts transmitting Frame " + sent.getID() + " on Bus " + path.getName());
+	public static void recordTransmissionStart(Frame frame, Bus path) {
+		write("Node " + frame.getPrevHop().getName() + " starts transmitting Frame " + frame.getID() + " on Bus " + path.getName()
+			   + " to " + frame.getDestination().getName() + " by way of " + frame.getNextHop().getName());
 	}
 	
-	public static void recordFinishTransmission(NetworkElementInterface src, Frame frame) {
-		write("Node " + src.getName() + " finished transmitting Frame " + frame.getID());
+	public static void recordTransmissionFinish(Frame frame, Bus path) {
+		write("Node " + frame.getPrevHop().getName() + " finished transmitting Frame " + frame.getID() + " onto " + path.getName());
 	}
 	
 	public static void recordDelivery(Frame frame) {
-		write("Frame successfully propogated and ACKed from Node " + frame.getSource().getName()
-				 + " to Node " + frame.getDestination().getName());
+		write(frame.getName() + " successfully propogated from Node " + frame.getPrevHop().getName()
+				 + " to Node " + frame.getNextHop().getName());
 	}
 
-	public static void recordCollision(NetworkElementInterface src, int backoff) {
-		write("\tNode " + src.getName() + " detects collision, will wait " + backoff + " slots.");
+	public static void recordCollision(NetworkElementInterface src, Frame frame, int backoff) {
+		write("\tNode " + src.getName() + " detects collision for " + frame.getID() + ", will wait " + backoff + " slots.");
 	}
 	
 	public static void addCollision() {
