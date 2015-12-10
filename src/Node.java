@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class Node implements NetworkElementInterface {
 	private final String NAME;
@@ -21,6 +22,7 @@ public class Node implements NetworkElementInterface {
 	//MISC DATA					
 	private int frame_num 						= 200000;						//But for a window size greater than 1, it might need it?
 	private ArrayList<Frame> frames				= new ArrayList<Frame>(frame_num);	//All frames.
+	private ArrayList<Node> allNodes;
 	private PrintWriter writer;													//Writer for this node's stats file.
 	
 	/**
@@ -82,6 +84,22 @@ public class Node implements NetworkElementInterface {
 			frame.setValues(this, dest, FRAME_SIZE);
 			frame.startTx();
 			--buffer;			//One less frame on the queue.
+			
+			if (getAccessibleNodes().contains(dest))
+				frame.setNextHop(dest);
+			else {
+				Iterable<Router> routers = path.getRouters();
+				int index = new Random().nextInt(2),
+					i = 0;
+				
+				for (Router router : routers) {
+					if (i == index) {
+						frame.setNextHop(router);
+						break;
+					} else
+						++i;
+				}
+			}
 		}
 		
 		usingBus = path;
@@ -184,12 +202,9 @@ public class Node implements NetworkElementInterface {
 	 * @throws UnsupportedOperationException	if no destination is available.
 	 */
 	public Node getRandomDestination() throws UnsupportedOperationException {
-		//Random rand = new Random();
-		ArrayList<Node> destinations = getAccessibleNodes();		
-		if (destinations.size() == 0)
-			throw new UnsupportedOperationException("getRandomDestination: No viable destinations.");
-		int index = 0;//rand.nextInt(destinations.size());
-		return destinations.get(index);
+		Random rand = new Random();
+		int index = rand.nextInt(allNodes.size());
+		return allNodes.get(index);
 	}
 	
 	/**
@@ -239,4 +254,11 @@ public class Node implements NetworkElementInterface {
 	public int getCollisions() {
 		return collisionsAtNode;
 	}	
+	
+	public void setAllNodes(ArrayList<Node> nodes) {
+		if (nodes.contains(this))
+			nodes.remove(this);
+		
+		allNodes = nodes;
+	}
 }

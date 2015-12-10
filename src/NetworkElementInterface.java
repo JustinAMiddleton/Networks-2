@@ -20,6 +20,8 @@ public interface NetworkElementInterface {
 	void finishTransmission();
 
 	void acceptFrame(Frame f);
+	
+	void acceptACK(Frame f);
 
 	String getName();
 

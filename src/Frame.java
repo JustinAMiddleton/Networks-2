@@ -3,6 +3,7 @@ public class Frame {
 	private long size;	//in bits
 	private Node src,
 				 dest;
+	private NetworkElementInterface nextHop;
 	private boolean isUsed;
 	
 	//Timing data!
@@ -40,6 +41,14 @@ public class Frame {
 	
 	public Node getDestination() {
 		return this.dest;
+	}
+	
+	public void setNextHop(NetworkElementInterface nextHop) {
+		this.nextHop = nextHop;
+	}
+	
+	public NetworkElementInterface getNextHop() {
+		return this.nextHop;
 	}
 	
 	public long getSize() {

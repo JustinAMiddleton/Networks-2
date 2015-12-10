@@ -8,9 +8,10 @@ import java.util.Set;
 public class Bus {
 	protected String name;					//Name of the bus.
 	protected Set<Node> nodes;				//All the nodes it's connected to.
+	protected Set<Router> routers;			//All the routers it's connected to.
 	protected Map<Frame, Long> propFrames_finishTime;	//All the frames currently propagating (after the node finishes transmission)
 											//TODO: Does this have to be a map?
-	protected final long 	 PROP_SPEED = 	200000000, 					 //in m/s
+	protected final long PROP_SPEED = 	200000000, 					 //in m/s
 					   	 PROP_TIME_x2 = 1000000l  *2*2000/PROP_SPEED; // microseconds, 2000 is distance and 2 is for both there and back
 	
 	protected int numTransmitting;	//how many nodes are trying to transmit? more than one means collision			
@@ -20,6 +21,7 @@ public class Bus {
 	public Bus(String name) {
 		this.name = name;
 		this.nodes = new HashSet<Node>();
+		this.routers = new HashSet<Router>();
 		this.propFrames_finishTime = new HashMap<Frame, Long>();
 		this.busy = false;
 		this.collision = false;
@@ -33,6 +35,11 @@ public class Bus {
 	public void addNode(Collection<Node> nodes) {
 		for (Node node : nodes) 
 			addNode(node);
+	}
+	
+	public void addRouter(Router r) {
+		this.routers.add(r);
+		r.addBus(this);
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////
@@ -73,8 +80,8 @@ public class Bus {
 	 * @param frame
 	 */
 	protected void deliver(Frame frame) {
-		Node destination = frame.getDestination(),
-			 src = frame.getSource();
+		NetworkElementInterface destination = frame.getNextHop(),
+								src = frame.getSource();
 		destination.acceptFrame(frame);
 		src.acceptACK(frame);
 		numTransmitting--; 
@@ -122,5 +129,6 @@ public class Bus {
 	
 	public String getName() { return this.name; }	
 	public Iterable<Node> getNodes() { return this.nodes; }	
+	public Iterable<Router> getRouters() { return this.routers; }
 	public long getPropTime(Frame frame) { return PROP_TIME_x2; } //1000000 * 2*getDistance(frame) / PROP_SPEED; }
 }

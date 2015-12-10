@@ -27,6 +27,11 @@ public class SimulationDriver {
 		 */
 		do {
 			try {
+				if (Clock.isUpdateTableTime()) {
+					randomizeCosts(busses);
+					updateTables(routers);
+				}
+				
 				//All events are recorded by the exact time they're completed, not by how long they 
 				//should take. This reduces math done throughout a process.
 				finishPropagations(busses);				//deliver frames/ACKs
@@ -37,11 +42,6 @@ public class SimulationDriver {
 					generateFrames(nodes);		//calculate how many new frames arrive
 					startTransmissions(nodes, busses);	//see which nodes start transmitting
 				}		
-				
-				if (Clock.isUpdateTableTime()) {
-					randomizeCosts(busses);
-					updateTables(routers);
-				}
 						
 				ProgressMonitor.flush();
 				//if (Clock.isSecond()) writeStatsEachSecond(nodes);
@@ -62,17 +62,64 @@ public class SimulationDriver {
 	 * Whatever works.
 	 */
 	private static ArrayList<Node> makeNodes() {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<Node> nodes = new ArrayList<Node>();
+		for (int i = 0; i < 4; ++i) {
+			nodes.add(new Node((char) (i + 'A') + ""));
+		}
+		
+		for (Node node: nodes) {
+			node.setAllNodes(new ArrayList<Node>(nodes));
+		}
+		
+		return nodes;
 	}
 	private static ArrayList<Router> makeRouters() {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<Router> routers = new ArrayList<Router>();
+		for (int i = 0; i < 4; ++i) {
+			routers.add(new Router("R" + i, null)); //TODO: Routing algorithm
+		}
+		return routers;
 	}
 	
 	private static ArrayList<Bus> makeBussesAndLinks(ArrayList<Node> nodes, ArrayList<Router> routers) {
-		// TODO Auto-generated method stub
-		return null;
+		Bus BUS_1 = new Bus("BUS_1");
+		BUS_1.addNode(nodes.get(0));
+		BUS_1.addNode(nodes.get(1));
+		BUS_1.addRouter(routers.get(0));
+		BUS_1.addRouter(routers.get(1));
+		
+		Bus BUS_2 = new Bus("BUS_2");
+		BUS_2.addNode(nodes.get(2));
+		BUS_2.addNode(nodes.get(3));
+		BUS_2.addRouter(routers.get(2));
+		BUS_2.addRouter(routers.get(3));
+		
+		Link L03 = new Link("L0-3"),
+		     L02 = new Link("L0-2"),
+		     L13 = new Link("L1-3"),
+		     L12 = new Link("L1-2");
+		
+		L03.addRouter(routers.get(0));		
+		L03.addRouter(routers.get(3));	
+		
+		L02.addRouter(routers.get(0));	
+		L02.addRouter(routers.get(2));	
+		
+		L13.addRouter(routers.get(1));	
+		L13.addRouter(routers.get(3));
+		
+		L12.addRouter(routers.get(1));	
+		L12.addRouter(routers.get(2));	
+		
+		ArrayList<Bus> allBusses = new ArrayList<Bus>();
+		allBusses.add(BUS_1);
+		allBusses.add(BUS_2);
+		allBusses.add(L12);
+		allBusses.add(L13);
+		allBusses.add(L02);
+		allBusses.add(L03);
+		
+		return allBusses;
 	}
 	
 	private static void generateFrames(ArrayList<Node> nodes) {

@@ -10,5 +10,6 @@ public class Link extends Bus {
 	public int getCost() { return cost; }
 	public void randomCost() { 
 		this.cost = rand.nextInt(10) + 1; 
+		System.out.println("Link " + this.name + " cost = " + cost);
 	}
 }
