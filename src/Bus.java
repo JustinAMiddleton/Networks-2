@@ -6,15 +6,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class Bus {
-	private String name;					//Name of the bus.
-	private Set<Node> nodes;				//All the nodes it's connected to.
-	private Map<Frame, Long> propFrames_finishTime;	//All the frames currently propagating (after the node finishes transmission)
+	protected String name;					//Name of the bus.
+	protected Set<Node> nodes;				//All the nodes it's connected to.
+	protected Map<Frame, Long> propFrames_finishTime;	//All the frames currently propagating (after the node finishes transmission)
 											//TODO: Does this have to be a map?
-	private final long 	 PROP_SPEED = 	200000000, 					 //in m/s
+	protected final long 	 PROP_SPEED = 	200000000, 					 //in m/s
 					   	 PROP_TIME_x2 = 1000000l  *2*2000/PROP_SPEED; // microseconds, 2000 is distance and 2 is for both there and back
 	
-	private int numTransmitting;	//how many nodes are trying to transmit? more than one means collision			
-	private boolean busy,			//is this bus claimed by a node?
+	protected int numTransmitting;	//how many nodes are trying to transmit? more than one means collision			
+	protected boolean busy,			//is this bus claimed by a node?
 					collision;		//did frames collide here?
 	
 	public Bus(String name) {
@@ -72,7 +72,7 @@ public class Bus {
 	 * Deliver the frame to its destination, deliver the ACK to the source.
 	 * @param frame
 	 */
-	private void deliver(Frame frame) {
+	protected void deliver(Frame frame) {
 		Node destination = frame.getDestination(),
 			 src = frame.getSource();
 		destination.acceptFrame(frame);
