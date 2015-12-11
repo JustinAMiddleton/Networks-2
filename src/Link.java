@@ -10,7 +10,7 @@ public class Link extends Bus {
 	@Override
 	public void deliver(Frame frame) {
 		NetworkElementInterface destination = frame.getNextHop(),
-				src = frame.getSource();
+				src = frame.getPrevHop();
 		destination.acceptFrameFromRouter(frame);
 		src.acceptACK(frame);
 		numTransmitting--; 

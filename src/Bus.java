@@ -50,7 +50,7 @@ public class Bus {
 	 * @return			Double the propagation time, which is when the propagation of 
 	 * 					both frame and ACK will be done.
 	 */
-	public long acceptFrame(Frame frame) {
+	public long acceptFrame(Frame frame) {		
 		long timeRemaining = PROP_TIME_x2; 
 		long finish = Clock.addStep(timeRemaining);
 		this.propFrames_finishTime.put(frame, finish);
@@ -81,7 +81,7 @@ public class Bus {
 	 */
 	protected void deliver(Frame frame) {
 		NetworkElementInterface destination = frame.getNextHop(),
-								src = frame.getSource();
+								src = frame.getPrevHop();
 		destination.acceptFrameFromNode(frame);
 		src.acceptACK(frame);
 		numTransmitting--; 
@@ -117,18 +117,16 @@ public class Bus {
 	 * @return
 	 */
 	public long getDistance(Frame frame) {
-		return getDistance(frame.getSource(), frame.getDestination());
+		return getDistance(frame.getPrevHop(), frame.getNextHop());
 	}
 	
 	public long getDistance(NetworkElementInterface src, NetworkElementInterface dest) {
-		if (!nodes.contains(src) || !nodes.contains(dest))
-			return Long.MAX_VALUE; //highest value in case there are no paths.
-		else
-			return 2000;	//All nodes are currently 2000 meters from each other.
+		return 2000;	//All nodes are currently 2000 meters from each other.
 	}
 	
 	public String getName() { return this.name; }	
 	public Iterable<Node> getNodes() { return this.nodes; }	
 	public Iterable<Router> getRouters() { return this.routers; }
 	public long getPropTime(Frame frame) { return PROP_TIME_x2; } //1000000 * 2*getDistance(frame) / PROP_SPEED; }
+	public int getNumTransmitting() { return numTransmitting; }
 }

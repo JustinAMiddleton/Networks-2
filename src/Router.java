@@ -19,9 +19,9 @@ public class Router implements NetworkElementInterface {
 			     busCollisionCheck = -1l,
 	             finishLinkTX = -1l;
 	
-	
-	//TODO: SOME KIND OF ROUTING TABLE
-	
+	private String linkStatus = "", busStatus = "";
+	public String getStatus() { return linkStatus + "/" + busStatus; }
+			
 	public Router(String name, RoutingAlgorithm ra) {
 		this.name = name;
 		this.routingAlgorithm = ra;
@@ -83,30 +83,33 @@ public class Router implements NetworkElementInterface {
 
 	@Override
 	public void sendFrameIfReady() {
-		if (!fromNodeBuffer.isEmpty()) {
-			System.out.println();
-		}
-		
 		//Send on links
 		if (!fromNodeBuffer.isEmpty() && linkFrame == null) {
 			linkFrame = fromNodeBuffer.remove();
 			linkFrame.setNextHop(routingTable.nextHop);
 			finishLinkTX = Clock.addStep(LINK_TRANS_TIME);
+			
+			routingTable.linkToTake.claim();
 			ProgressMonitor.recordTransmissionStart(linkFrame, routingTable.linkToTake);
+			linkStatus = "tx";
 		}
 		
-		//Send
+		//Send on bus
 		if (Clock.isSlotTime()) {
 			currentBackoff = Math.max(currentBackoff-1, 0);
 			if (!fromRouterBuffer.isEmpty() && busFrame == null && currentBackoff == 0) {
 				Bus busToUse = getBus();
+				busStatus = "";
 				if (csmacd.canAccess(busToUse)) {
 					busFrame = fromRouterBuffer.remove();
 					busFrame.setNextHop(busFrame.getDestination());
+					
 					finishBusTX = Clock.addStep(BUS_TRANS_TIME);
 					busCollisionCheck = Clock.addStep(busToUse.getPropTime(busFrame));	
+					
 					busToUse.claim();
 					ProgressMonitor.recordTransmissionStart(busFrame, busToUse);
+					busStatus = "tx";
 				}
 			}
 		}
@@ -135,16 +138,17 @@ public class Router implements NetworkElementInterface {
 				getBus().release();
 				
 				ProgressMonitor.recordCollision(this, busFrame, currentBackoff);
-				resetTimes();
+				resetTimesForCollision();
+				busStatus = "col";
 			} 
 		}
 	}
 
-	private void resetTimes() {
+	private void resetTimesForCollision() {
 		fromRouterBuffer.addFirst(busFrame);
 		busFrame = null;
 	    busCollisionCheck = -1l;
-	    finishLinkTX = -1l;
+	    finishBusTX = -1l;
 	}
 
 	@Override
@@ -152,11 +156,18 @@ public class Router implements NetworkElementInterface {
 		if (Clock.equalsTime(finishLinkTX)) {
 			routingTable.linkToTake.acceptFrame(linkFrame);
 			ProgressMonitor.recordTransmissionFinish(linkFrame, routingTable.linkToTake);
+			linkFrame = null;
+			finishLinkTX = -1l;
+			linkStatus = "";
 		}
 		
 		if (Clock.equalsTime(finishBusTX)) {
 			getBus().acceptFrame(busFrame);
 			ProgressMonitor.recordTransmissionFinish(busFrame, getBus());
+			busFrame = null;
+			busCollisionCheck = -1l;
+			finishBusTX = -1l;
+			busStatus = "";
 		}
 	}
 

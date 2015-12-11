@@ -64,7 +64,7 @@ public class Clock {
 	}
 	
 	public static void printTime() {
-		System.out.printf("Time: %.5f\n", (double) time / 1000000);
+		System.out.printf("Time: %.6f\n", (double) time / 1000000);
 	}
 	
 	/**

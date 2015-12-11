@@ -25,7 +25,7 @@ public class Frame {
 		this.size = size;
 		this.isUsed = true;
 		
-		nextHop = dest;
+		nextHop = null;
 		prevHop = src;
 	}
 	
@@ -46,7 +46,7 @@ public class Frame {
 	}
 	
 	public void setNextHop(NetworkElementInterface nextHop) {
-		if (prevHop != src)
+		if (this.nextHop != null)
 			this.prevHop = this.nextHop;
 		this.nextHop = nextHop;
 	}

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class SimulationDriver {
 	public static void main(String[] args) {
 		//for (int i = 2; i <= 10; i += 2)
-			simulate(10, 30);
+			simulate(10, 1);
 	}
 
 	private static void simulate(int N, long seconds) {
@@ -31,8 +31,8 @@ public class SimulationDriver {
 				//All events are recorded by the exact time they're completed, not by how long they 
 				//should take. This reduces math done throughout a process.
 				finishPropagations(busses);				//deliver frames/ACKs
-				finishTransmissions(nodes);		//finish a transmission, start propagation
-				detectCollisions(nodes, busses);		//detect any collisions on a bus
+				finishTransmissions(nodes, routers);		//finish a transmission, start propagation
+				detectCollisions(nodes, routers, busses);		//detect any collisions on a bus
 				
 				if (Clock.isSlotTime()) {	
 					generateFrames(nodes);		//calculate how many new frames arrive
@@ -50,6 +50,21 @@ public class SimulationDriver {
 		//writeStatsEachSecond(nodes);
 		printData(nodes);
 		deleteExtraFiles(nodes);
+	}
+
+	private static void flush(ArrayList<Node> nodes, ArrayList<Router> routers, ArrayList<Bus> busses) {
+		ArrayList<String> names = new ArrayList<String>(),
+						  statuses = new ArrayList<String>();
+		
+		for (Node node : nodes) { names.add(node.getName()); statuses.add(node.status()); }
+		for (Router router : routers) { names.add(router.getName()); statuses.add(router.getStatus()); }
+		for (Bus bus : busses) { names.add(bus.getName()); statuses.add(bus.isBusy() ? "busy-" + bus.getNumTransmitting() : ""); }
+		
+		for (String name : names) System.out.print("\t" + name);
+		System.out.println();
+		for (String status : statuses) System.out.print("\t" + status);
+		System.out.println();
+		System.out.println();
 	}
 
 	/**
@@ -136,16 +151,24 @@ public class SimulationDriver {
 		for (Bus bus : busses) bus.setStatus();					//set the status of the bus
 	}
 	
-	private static void finishTransmissions(ArrayList<Node> nodes) {
+	private static void finishTransmissions(ArrayList<Node> nodes, ArrayList<Router> routers) {
 		for (NetworkElementInterface node : nodes) {
+			node.finishTransmission();
+		}		
+		
+		for (NetworkElementInterface node : routers) {
 			node.finishTransmission();
 		}		
 	}
 
-	private static void detectCollisions(ArrayList<Node> nodes, ArrayList<Bus> busses) {
+	private static void detectCollisions(ArrayList<Node> nodes, ArrayList<Router> routers, ArrayList<Bus> busses) {
 		for (Node node : nodes) {
 			node.checkCollision();
 		}
+		
+		for (NetworkElementInterface node : routers) {
+			node.checkCollision();
+		}		
 		
 		for (Bus bus : busses) bus.setStatus();					//set the status of the bus
 	}

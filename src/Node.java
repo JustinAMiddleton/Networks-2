@@ -25,6 +25,9 @@ public class Node implements NetworkElementInterface {
 	private ArrayList<Node> allNodes;
 	private PrintWriter writer;													//Writer for this node's stats file.
 	
+	private String status = "";
+	public String status() { return status + (status.compareTo("col") == 0 ? "-" + currentBackoff : ""); }
+	
 	/**
 	 * Constructor; now takes in only name and assumes distribution, access, backoff will be same.
 	 * @param name
@@ -60,13 +63,17 @@ public class Node implements NetworkElementInterface {
 	@Override
 	public void sendFrameIfReady() {
 		currentBackoff = Math.max(currentBackoff-1, 0);
-		if (currentBackoff > 0 || buffer == 0 || usingBus != null)	
+		if (currentBackoff > 0 
+				|| buffer == 0 || usingBus != null)	
 			return;	
 
+		status = "";
 		Node dest = getRandomDestination(); //TODO: With only one, it doesn't matter if I record the destination.
 		Bus path = findBestPath(dest);		//may throw exception if no path at all	
-		if (csmacd.canAccess(path)) 		//Checks to see if the path can be accessed.
+		if (csmacd.canAccess(path)) { 		//Checks to see if the path can be accessed.
 			sendFrame(dest, path);
+			status = "(tx)";
+		}
 	}
 
 	/**
@@ -87,7 +94,7 @@ public class Node implements NetworkElementInterface {
 			--buffer;			//One less frame on the queue.
 			
 			if (getAccessibleNodes().contains(dest))
-				;//frame.setNextHop(dest);
+				frame.setNextHop(dest);
 			else 		
 				frame.setNextHop(getRandomRouter(path));
 		}
@@ -126,6 +133,7 @@ public class Node implements NetworkElementInterface {
 			usingBus.acceptFrame(frame);			
 			frame.finishTx();
 			ProgressMonitor.recordTransmissionFinish(frame, usingBus);
+			status = "";
 		}
 	}
 
@@ -166,14 +174,16 @@ public class Node implements NetworkElementInterface {
 			if (usingBus.hasCollision()) {
 				++currentCollisions;
 				++collisionsAtNode;
+				++buffer;
 				frames.get(currentID).collide();
 				
-				currentBackoff = getBackoff();
+				currentBackoff = this.random.getBackoff(currentCollisions);
 				usingBus.release();
 				resetTimes();
 				
 				ProgressMonitor.recordCollision(this, frames.get(currentID), currentBackoff);
-			} 
+				status = "col";
+			} else status = "tx";
 		}
 	}
 	
@@ -233,7 +243,7 @@ public class Node implements NetworkElementInterface {
 	 * @return
 	 */
 	private int getBackoff() {
-		return this.random.getBackoff(currentCollisions);
+		return currentBackoff;
 	}
 	
 	/* (non-Javadoc)
