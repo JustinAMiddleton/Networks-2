@@ -102,7 +102,9 @@ public class Router implements NetworkElementInterface {
 				busStatus = "";
 				if (csmacd.canAccess(busToUse)) {
 					busFrame = fromRouterBuffer.remove();
-					busFrame.setNextHop(busFrame.getDestination());
+					
+					if (busFrame.getNextHop() != busFrame.getDestination())
+						busFrame.setNextHop(busFrame.getDestination());
 					
 					finishBusTX = Clock.addStep(BUS_TRANS_TIME);
 					busCollisionCheck = Clock.addStep(busToUse.getPropTime(busFrame));	

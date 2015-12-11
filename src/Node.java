@@ -27,6 +27,7 @@ public class Node implements NetworkElementInterface {
 	
 	private String status = "";
 	public String status() { return status + (status.compareTo("col") == 0 ? "-" + currentBackoff : ""); }
+	public int all = 0;
 	
 	/**
 	 * Constructor; now takes in only name and assumes distribution, access, backoff will be same.
@@ -54,7 +55,8 @@ public class Node implements NetworkElementInterface {
 	 */
 	public void generateFrames() {
 		int arrived = poisson.next();
-		buffer += arrived;										  
+		buffer += arrived;	
+		all += arrived;
 	}
 	
 	/* (non-Javadoc)
@@ -64,7 +66,7 @@ public class Node implements NetworkElementInterface {
 	public void sendFrameIfReady() {
 		currentBackoff = Math.max(currentBackoff-1, 0);
 		if (currentBackoff > 0 
-				|| buffer == 0 || usingBus != null)	
+				|| (buffer == 0 && !frames.get(currentID).isAlreadyInitialized()) || usingBus != null)	
 			return;	
 
 		status = "";
@@ -174,7 +176,6 @@ public class Node implements NetworkElementInterface {
 			if (usingBus.hasCollision()) {
 				++currentCollisions;
 				++collisionsAtNode;
-				++buffer;
 				frames.get(currentID).collide();
 				
 				currentBackoff = this.random.getBackoff(currentCollisions);

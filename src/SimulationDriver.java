@@ -40,6 +40,7 @@ public class SimulationDriver {
 				}		
 						
 				ProgressMonitor.flush();
+				flush(nodes, routers, busses);
 				//if (Clock.isSecond()) writeStatsEachSecond(nodes);
 			} catch (UnsupportedOperationException e) {
 				System.out.println(e.getMessage());
@@ -205,6 +206,7 @@ public class SimulationDriver {
 								+ "\tand has " + node.getCollisions() + " collisions\n"
 								+ "\tand sent out " + (node.getCurrentID()-1) + " frames.";
 			System.out.println(printout);
+			System.out.println(node.all);
 			regData.println(printout);
 			
 			try {
