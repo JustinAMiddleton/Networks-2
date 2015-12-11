@@ -154,11 +154,13 @@ public class Router implements NetworkElementInterface {
 		}
 	}
 
+	//or ReceivedFromBus
 	@Override
 	public void acceptFrameFromNode(Frame f) {
 		fromNodeBuffer.add(f);
 	}
 	
+	//or ReceivedFromLink
 	@Override
 	public void acceptFrameFromRouter(Frame f) {
 		fromRouterBuffer.add(f);

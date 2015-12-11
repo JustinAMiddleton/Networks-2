@@ -55,6 +55,10 @@ public class Node implements NetworkElementInterface {
 	 */
 	public void generateFrames() {
 		int arrived = poisson.next();
+		
+		for (int i = all; i < all + arrived && i < frame_num; ++i)
+			frames.get(i).create();
+		
 		buffer += arrived;	
 		all += arrived;
 	}
@@ -193,7 +197,8 @@ public class Node implements NetworkElementInterface {
 	 */
 	@Override
 	public void acceptFrameFromNode(Frame f) {
-		f.deliverAndACK();
+		f.finish();
+		System.out.println(f.getName() + ": " + f.toString());
 	}
 	
 	/**

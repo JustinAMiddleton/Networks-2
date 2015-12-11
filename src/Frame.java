@@ -6,13 +6,16 @@ public class Frame {
 	private NetworkElementInterface nextHop,
 									prevHop;
 	private boolean isUsed;
+	private boolean finished;
 	
 	//Timing data!
-	private long startTXTime = 0, 
+	private long createTime,
+			startTXTime = 0, 
 			finishTXTime = 0, 
 			deliveryAndACKTime = 0, 
 			finishTime = 0;
-	private int collisions = 0;
+	private int collisionsHere = 0,
+			    collisionsAll = 0;
 	
 	public Frame(int id) {
 		this.id = id;
@@ -70,6 +73,12 @@ public class Frame {
 	public boolean isAlreadyInitialized() {
 		return this.isUsed;
 	}
+	
+	//=====================================================
+	
+	public void create() {
+		this.createTime = Clock.time();
+	}
 
 	public void startTx() {
 		this.startTXTime = Clock.time();
@@ -80,7 +89,7 @@ public class Frame {
 	}
 
 	public void collide() {
-		this.collisions++;
+		this.collisionsHere++;
 	}
 
 	public void deliverAndACK() {
@@ -92,6 +101,6 @@ public class Frame {
 	}
 	
 	public String toString() {
-		return id+","+startTXTime+","+finishTXTime+","+collisions+","+deliveryAndACKTime;
+		return id+","+createTime+","+startTXTime+","+finishTXTime+","+collisionsHere+","+deliveryAndACKTime+","+finishTime;
 	}
 }
