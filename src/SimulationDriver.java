@@ -8,7 +8,7 @@ import java.util.ArrayList;
 public class SimulationDriver {
 	public static void main(String[] args) {
 		//for (int i = 2; i <= 10; i += 2)
-			simulate(10, 1);
+			simulate(10, 30);
 	}
 
 	private static void simulate(int N, long seconds) {
@@ -25,7 +25,7 @@ public class SimulationDriver {
 			try {
 				if (Clock.isUpdateTableTime()) {
 					randomizeCosts(busses);
-					updateTables(routers);
+					updateTables(routers, busses);
 				}
 				
 				//All events are recorded by the exact time they're completed, not by how long they 
@@ -39,8 +39,8 @@ public class SimulationDriver {
 					startTransmissions(nodes, routers, busses);	//see which nodes start transmitting
 				}		
 						
-				ProgressMonitor.flush();
-				flush(nodes, routers, busses);
+				//ProgressMonitor.flush();
+				//flush(nodes, routers, busses);
 				//if (Clock.isSecond()) writeStatsEachSecond(nodes);
 			} catch (UnsupportedOperationException e) {
 				System.out.println(e.getMessage());
@@ -88,7 +88,7 @@ public class SimulationDriver {
 	private static ArrayList<Router> makeRouters() {
 		ArrayList<Router> routers = new ArrayList<Router>();
 		for (int i = 0; i < 4; ++i) {
-			routers.add(new Router("R" + i, null)); //TODO: Routing algorithm
+			routers.add(new Router("R" + i, new DijkstrasAlgorithm())); 
 		}
 		return routers;
 	}
@@ -182,6 +182,7 @@ public class SimulationDriver {
 	}
 	
 	private static void randomizeCosts(ArrayList<Bus> busses) {
+		System.out.println("\nRandomizing costs...");
 		for (Bus bus : busses) {
 			if (bus instanceof Link) {
 				((Link) bus).randomCost();
@@ -189,9 +190,10 @@ public class SimulationDriver {
 		}
 	}
 	
-	private static void updateTables(ArrayList<Router> routers) {
+	private static void updateTables(ArrayList<Router> routers, ArrayList<Bus> busses) {
 		for (Router router : routers) {
-			router.updateTable();
+			router.updateTable(new ArrayList<Router>(routers), 
+					new ArrayList<Bus>(busses));
 		}
 	}
 	
@@ -204,9 +206,9 @@ public class SimulationDriver {
 		for (Node node : nodes) {
 			String printout = "Node " + node.getName() + " has " + node.getBuffer() + " waiting\n"
 								+ "\tand has " + node.getCollisions() + " collisions\n"
-								+ "\tand sent out " + (node.getCurrentID()-1) + " frames.";
+								+ "\tand sent out " + (node.getCurrentID()-1) + " frames\n"
+								+ "\tand made " + node.all + " frames overall.";
 			System.out.println(printout);
-			System.out.println(node.all);
 			regData.println(printout);
 			
 			try {
@@ -230,7 +232,6 @@ public class SimulationDriver {
 	private static void deleteExtraFiles(ArrayList<Node> nodes) {
 		for (NetworkElementInterface node : nodes) {			
 			File nodefile = new File(node.getName() + ".CSV");
-			System.out.println(nodefile.getAbsolutePath());
 			nodefile.delete();
 		}
 	}

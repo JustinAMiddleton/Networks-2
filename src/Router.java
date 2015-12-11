@@ -1,4 +1,5 @@
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 public class Router implements NetworkElementInterface {
@@ -36,32 +37,11 @@ public class Router implements NetworkElementInterface {
 	 * to the other side, so we have only one row for everything.
 	 * 
 	 * We also work with the assumption that each link has only two routers.
+	 * @param busses 
+	 * @param routers 
 	 */
-	public void updateTable() {
-		int lowestCost = Integer.MAX_VALUE;
-		Link lowestLink = null;
-		
-		for (Bus bus : connections) {
-			if (bus instanceof Link) {
-				Link link = ((Link) bus);
-				int cost = link.getCost();
-				
-				if (lowestCost > cost) {
-					lowestCost = cost;
-					lowestLink = link;
-				}
-			}
-		}
-		
-		Router dest = null;
-		for (Router router : lowestLink.getRouters()) {
-			if (router.getName().compareTo(this.name) != 0) {
-				dest = router;
-			}
-		}
-		
-		routingTable.setValues("all", dest, lowestLink);
-		System.out.println(routingTable.toString());
+	public void updateTable(ArrayList<Router> routers, ArrayList<Bus> busses) {
+		routingAlgorithm.updateTable(this, routers, busses);
 	}
 
 	@Override
@@ -193,7 +173,7 @@ public class Router implements NetworkElementInterface {
 		return 1;//TODO: frames.size();
 	}
 	
-	private class RoutingTableRow { 
+	public class RoutingTableRow { 
 		public String destinationName;
 		public Router nextHop;
 		public Link linkToTake;
@@ -212,9 +192,19 @@ public class Router implements NetworkElementInterface {
 			return name + " sends packets along " + linkToTake.getName() + " to " + nextHop.getName();
 		}
 	}
+	
+	public void setRoutingTable(String dest, Router nextHop, Link linkToTake) {
+		this.routingTable.setValues(dest, nextHop, linkToTake);
+	}
 
 	@Override
 	public void acceptACK(Frame f) {
 		//NOTHING
+	}
+	
+	public HashSet<Bus> getLinks() {
+		HashSet<Bus> links = new HashSet<Bus>(connections);
+		links.remove(getBus());
+		return links;
 	}
 }

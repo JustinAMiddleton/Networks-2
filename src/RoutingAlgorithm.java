@@ -1,4 +1,5 @@
+import java.util.ArrayList;
 
 public abstract class RoutingAlgorithm {
-	//I don't know how these algorithms should work yet....
+	public abstract void updateTable(Router router, ArrayList<Router> routers, ArrayList<Bus> busses);
 }
