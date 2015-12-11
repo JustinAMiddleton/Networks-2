@@ -60,6 +60,7 @@ public class Router implements NetworkElementInterface {
 					   LINK_TRANS_TIME = (1000000l * 8000) / 1000000000l;	//in b/s;	//in b/s
 	private int currentCollisions = 0;
 	private int collisionsAtRouter = 0;
+	private int traffic = 0;
 	private int currentBackoff;
 
 	@Override
@@ -69,6 +70,9 @@ public class Router implements NetworkElementInterface {
 			linkFrame = fromNodeBuffer.remove();
 			linkFrame.setNextHop(routingTable.nextHop);
 			finishLinkTX = Clock.addStep(LINK_TRANS_TIME);
+			
+			if (!linkFrame.isAlreadyInitialized())
+				linkFrame.startTx();
 			
 			routingTable.linkToTake.claim();
 			ProgressMonitor.recordTransmissionStart(linkFrame, routingTable.linkToTake);
@@ -86,6 +90,9 @@ public class Router implements NetworkElementInterface {
 					
 					if (busFrame.getNextHop() != busFrame.getDestination())
 						busFrame.setNextHop(busFrame.getDestination());
+					
+					if (!busFrame.isAlreadyInitialized())
+						busFrame.startTx();
 					
 					finishBusTX = Clock.addStep(BUS_TRANS_TIME);
 					busCollisionCheck = Clock.addStep(busToUse.getPropTime(busFrame));	
@@ -134,36 +141,52 @@ public class Router implements NetworkElementInterface {
 	    finishBusTX = -1l;
 	}
 
+	private int sentByLink = 0, sentByBus = 0;
 	@Override
 	public void finishTransmission() {
 		if (Clock.equalsTime(finishLinkTX)) {
 			routingTable.linkToTake.acceptFrame(linkFrame);
 			ProgressMonitor.recordTransmissionFinish(linkFrame, routingTable.linkToTake);
+			linkFrame.finishTx();
+			
 			linkFrame = null;
 			finishLinkTX = -1l;
 			linkStatus = "";
+			++sentByLink;
 		}
 		
 		if (Clock.equalsTime(finishBusTX)) {
 			getBus().acceptFrame(busFrame);
 			ProgressMonitor.recordTransmissionFinish(busFrame, getBus());
+			busFrame.finishTx();
+			
 			busFrame = null;
 			busCollisionCheck = -1l;
 			finishBusTX = -1l;
 			busStatus = "";
+			++sentByBus;
 		}
 	}
 
 	//or ReceivedFromBus
 	@Override
 	public void acceptFrameFromNode(Frame f) {
+		++traffic;
 		fromNodeBuffer.add(f);
+		
+		//Record times
+		f.deliverAndACK();
+		f.create(this);
 	}
 	
 	//or ReceivedFromLink
 	@Override
 	public void acceptFrameFromRouter(Frame f) {
+		++traffic;
 		fromRouterBuffer.add(f);
+		
+		f.deliverAndACK();
+		f.create(this);
 	}
 
 	@Override
@@ -173,7 +196,7 @@ public class Router implements NetworkElementInterface {
 
 	@Override
 	public int getBuffer() {
-		return 1;//TODO: frames.size();
+		return fromRouterBuffer.size() + fromNodeBuffer.size();
 	}
 	
 	public class RoutingTableRow { 
@@ -209,5 +232,15 @@ public class Router implements NetworkElementInterface {
 		HashSet<Bus> links = new HashSet<Bus>(connections);
 		links.remove(getBus());
 		return links;
+	}
+	
+	public String toString() {
+		String results = name + ":"
+						+ "\n\tTotal Collisions: " + collisionsAtRouter
+						+ "\n\tTotal Traffic: " + traffic
+						+ "\n\tTotal Waiting: " + getBuffer()
+						+ "\n\tSent by Link: " + sentByLink
+						+ "\n\tSent by Bus: " + sentByBus;
+		return results;
 	}
 }

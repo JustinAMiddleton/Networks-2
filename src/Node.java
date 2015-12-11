@@ -11,7 +11,7 @@ public class Node implements NetworkElementInterface {
 	private final RandomBackoff random 			= new RandomBackoff();			//How does the node choose how long to wait?	
 	private ArrayList<Bus> busses				= new ArrayList<Bus>();			//What busses are connected to this node?
 	private int currentBackoff 					= 0,							//How many slots does this node have to wait before transmitting?
-				currentID 						= 1,							//What frame # is next?
+				currentID 						= 0,							//What frame # is next?
 				buffer							= 0,							//How many nodes are waiting in the queue	
 				currentCollisions				= 0,							//How many times has this node detected a collision for the current frame?
 				collisionsAtNode				= 0;							//How many times has this node detected a collision overall?
@@ -38,8 +38,18 @@ public class Node implements NetworkElementInterface {
 		
 		for (int i = 0; i <= frame_num; ++i) 
 			frames.add(new Frame(i));
-		//this.writer = ProgressMonitor.getWriter(this.NAME + ".csv");
+		this.writer = ProgressMonitor.getWriter(this.NAME + ".csv");
 	}
+	public void writeOut() {
+		for (Frame frame : frames) {
+			if (frame.isFinished()) {
+				writer.println(frame.toString());
+				writer.flush();
+			} else break;
+		}
+		writer.close();
+	}
+	
 	
 	/* (non-Javadoc)
 	 * @see NetworkInterface#addBus(Bus)
@@ -48,16 +58,13 @@ public class Node implements NetworkElementInterface {
 	public void addBus(Bus b) {
 		this.busses.add(b);
 	}
-	
-	/**
-	 * Receive frames from higher layers.
-	 * Creates a stats element for every 1000 nodes.
-	 */
+
 	public void generateFrames() {
 		int arrived = poisson.next();
 		
-		for (int i = all; i < all + arrived && i < frame_num; ++i)
-			frames.get(i).create();
+		for (int i = all; i < all + arrived && i < frame_num; ++i) {
+			frames.get(i).create(this);
+		}
 		
 		buffer += arrived;	
 		all += arrived;
@@ -197,8 +204,8 @@ public class Node implements NetworkElementInterface {
 	 */
 	@Override
 	public void acceptFrameFromNode(Frame f) {
+		f.deliverAndACK();
 		f.finish();
-		System.out.println(f.getName() + ": " + f.toString());
 	}
 	
 	/**
@@ -208,7 +215,7 @@ public class Node implements NetworkElementInterface {
 		++currentID;
 		resetTimes();
 		currentCollisions = 0;
-		frame.deliverAndACK();
+		//frame.deliverAndACK();
 	}
 
 	private void resetTimes() {

@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 public class Frame {
 	private int id;
 	private long size;	//in bits
@@ -7,6 +9,8 @@ public class Frame {
 									prevHop;
 	private boolean isUsed;
 	private boolean finished;
+	
+	ArrayList<String> times = new ArrayList<String>();
 	
 	//Timing data!
 	private long createTime,
@@ -76,31 +80,57 @@ public class Frame {
 	
 	//=====================================================
 	
-	public void create() {
-		this.createTime = Clock.time();
+	public void create(NetworkElementInterface place) {
+		times.add(place.getName());
+		times.add(Clock.time() + "");
+		isUsed = false;
+		
+		//this.createTime = Clock.time();
 	}
 
 	public void startTx() {
-		this.startTXTime = Clock.time();
+		times.add(Clock.time() + "");
+		isUsed = true;
+		//this.startTXTime = Clock.time();
 	}
 
 	public void finishTx() {
-		this.finishTXTime = Clock.time();
+		times.add(Clock.time() + "");
+		//this.finishTXTime = Clock.time();
 	}
 
 	public void collide() {
 		this.collisionsHere++;
+		this.collisionsAll++;
 	}
 
 	public void deliverAndACK() {
-		this.deliveryAndACKTime = Clock.time();
+		times.add(Clock.time() + "");
+		times.add(collisionsHere + "");
+		
+		collisionsHere = 0;
+		//this.deliveryAndACKTime = Clock.time();
 	}
 	
 	public void finish() {
-		this.finishTime = Clock.time();
+		times.add(Clock.time() + "");
+		//times.add(collisionsHere + "");
+		times.add(collisionsAll + "");
+
+		finished = true;
+		//this.finishTime = Clock.time();
+	}
+	
+	public boolean isFinished() {
+		return finished;
 	}
 	
 	public String toString() {
-		return id+","+createTime+","+startTXTime+","+finishTXTime+","+collisionsHere+","+deliveryAndACKTime+","+finishTime;
+		String results = "";
+		for (String s : times) {
+			if (results.compareTo("") != 0) results += ",";
+			results += s;
+		}
+		return results;
 	}
 }
