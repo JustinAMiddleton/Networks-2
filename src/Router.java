@@ -42,6 +42,7 @@ public class Router implements NetworkElementInterface {
 	 */
 	public void updateTable(ArrayList<Router> routers, ArrayList<Bus> busses) {
 		routingAlgorithm.updateTable(this, routers, busses);
+		ProgressMonitor.write(routingTable.toString() + "\n");
 	}
 
 	@Override

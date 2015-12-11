@@ -11,7 +11,7 @@ public class DijkstrasAlgorithm extends RoutingAlgorithm {
 		boolean routingTableSet = false;
 		
 		String algorithmPrintOut = "";
-		algorithmPrintOut += "\nFrom " + source.getName() + ":\n";
+		algorithmPrintOut += "From " + source.getName() + ":\n";
 		while (!routers.isEmpty()) {
 			Router closest = getClosest(routers, routerCosts);
 			routers.remove(closest);
@@ -32,8 +32,9 @@ public class DijkstrasAlgorithm extends RoutingAlgorithm {
 				routingTableSet = true;
 			}
 			
-			algorithmPrintOut += closest.getName() + ":" + routerCosts.get(closest) + ":" + (prevSteps.get(closest) != null ? prevSteps.get(closest).getName() : "-")
-					+ ":" + (linkToReachRouter.containsKey(closest) ? linkToReachRouter.get(closest).getName() : "-") + "\n";
+			algorithmPrintOut += closest.getName() + ";\tCost: " + routerCosts.get(closest) 
+								+ ";\tNext Hop: " + (prevSteps.get(closest) != null ? prevSteps.get(closest).getName() : "-")
+								+ ";\tLink Used: " + (linkToReachRouter.containsKey(closest) ? linkToReachRouter.get(closest).getName() : "-") + "\n";
 		}
 		
 		ProgressMonitor.write(algorithmPrintOut);

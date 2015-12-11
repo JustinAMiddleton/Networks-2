@@ -39,8 +39,8 @@ public class SimulationDriver {
 					startTransmissions(nodes, routers, busses);	//see which nodes start transmitting
 				}		
 						
-				//ProgressMonitor.flush();
-				//flush(nodes, routers, busses);
+				ProgressMonitor.flush();
+				flush(nodes, routers, busses);
 				//if (Clock.isSecond()) writeStatsEachSecond(nodes);
 			} catch (UnsupportedOperationException e) {
 				System.out.println(e.getMessage());
@@ -182,7 +182,7 @@ public class SimulationDriver {
 	}
 	
 	private static void randomizeCosts(ArrayList<Bus> busses) {
-		System.out.println("\nRandomizing costs...");
+		ProgressMonitor.write("\nRandomizing costs...");
 		for (Bus bus : busses) {
 			if (bus instanceof Link) {
 				((Link) bus).randomCost();
