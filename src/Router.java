@@ -237,10 +237,10 @@ public class Router implements NetworkElementInterface {
 	public String toString() {
 		String results = name + ":"
 						+ "\n\tTotal Collisions: " + collisionsAtRouter
-						+ "\n\tTotal Traffic: " + traffic
-						+ "\n\tTotal Waiting: " + getBuffer()
-						+ "\n\tSent by Link: " + sentByLink
-						+ "\n\tSent by Bus: " + sentByBus;
+						+ "\n\tTotal Frames Received: " + traffic
+						+ "\n\tTotal Waiting In Buffer: " + getBuffer()
+						+ "\n\tSent Out by Link: " + sentByLink
+						+ "\n\tSent Out by Bus: " + sentByBus;
 		return results;
 	}
 }
