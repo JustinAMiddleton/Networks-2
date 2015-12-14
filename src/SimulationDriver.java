@@ -8,10 +8,14 @@ import java.util.ArrayList;
 public class SimulationDriver {
 	public static void main(String[] args) {
 		//for (int i = 2; i <= 10; i += 2)
-			simulate(10, 30, false);
+			simulate(30, false);
 	}
 
-	private static void simulate(int N, long seconds, boolean print) {
+	/**
+	 * seconds: duration of simulation
+	 * print: do you want verbose output?
+	 */
+	private static void simulate(long seconds, boolean print) {
 		Clock.reset();
 		ProgressMonitor.reset();
 		
@@ -224,7 +228,7 @@ public class SimulationDriver {
 //				in.close();
 //			} catch (IOException e) {}
 			
-			//node.writeOut();
+			node.writeOut();
 		}
 		
 		for (Router router : routers) {
