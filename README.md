@@ -1,2 +1,3 @@
-# Networks-2
-Another attempt at navigating a hopeless situation.
+# Networks
+
+Final Networks (CSC/ECE 570) project code for Justin A Middleton, Ronak Doshi, and Sharat Domir.
